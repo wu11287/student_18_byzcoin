@@ -7,7 +7,7 @@ package service
 
 import (
 	"fmt"
-	// "gopkg.in/dedis/onet.v2/log"
+	"gopkg.in/dedis/onet.v2/log"
 	"errors"
 
 	// "github.com/dedis/student_18_omniledger/omniledger/darc"
@@ -35,7 +35,7 @@ func NewClient() *Client {
 // CreateGenesisBlock sets up a new skipchain to hold the key/value pairs. If
 // a key is given, it is used to authenticate towards the cothority.
 func (c *Client) CreateGenesisBlock(r *onet.Roster, msg *CreateGenesisBlock) (*CreateGenesisBlockResponse, error) {
-	// log.Infof("CreateGenesisBlock")
+	log.Infof("CreateGenesisBlock")
 	reply := &CreateGenesisBlockResponse{}
 	fmt.Println(r.List[0])
 	if err := c.SendProtobuf(r.List[0], msg, reply); err != nil {

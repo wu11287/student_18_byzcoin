@@ -5,6 +5,7 @@
 package websocket
 
 import (
+	"fmt"
 	"bufio"
 	"encoding/binary"
 	"errors"
@@ -1060,12 +1061,15 @@ func (r *messageReader) Close() error {
 // ReadMessage is a helper method for getting a reader using NextReader and
 // reading from that reader to a buffer.
 func (c *Conn) ReadMessage() (messageType int, p []byte, err error) {
+	fmt.Println("ReadMessage start ")
 	var r io.Reader
 	messageType, r, err = c.NextReader()
 	if err != nil {
 		return messageType, nil, err
 	}
 	p, err = ioutil.ReadAll(r)
+	fmt.Println("ReadMessage end ")
+
 	return messageType, p, err
 }
 

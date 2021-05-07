@@ -5,6 +5,7 @@
 package websocket
 
 import (
+	"fmt"
 	"bytes"
 	"context"
 	"crypto/tls"
@@ -147,6 +148,7 @@ var nilDialer = *DefaultDialer
 // etcetera. The response body may not contain the entire response and does not
 // need to be closed by the application.
 func (d *Dialer) DialContext(ctx context.Context, urlStr string, requestHeader http.Header) (*Conn, *http.Response, error) {
+	fmt.Println("DialContext start")
 	if d == nil {
 		d = &nilDialer
 	}
@@ -379,6 +381,8 @@ func (d *Dialer) DialContext(ctx context.Context, urlStr string, requestHeader h
 
 	netConn.SetDeadline(time.Time{})
 	netConn = nil // to avoid close in defer.
+
+	fmt.Println("DialContext start")
 	return conn, resp, nil
 }
 

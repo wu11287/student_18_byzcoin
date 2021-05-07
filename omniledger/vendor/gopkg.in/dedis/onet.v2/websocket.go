@@ -298,16 +298,19 @@ func (c *Client) closeSingleUseConn(dst *network.ServerIdentity, path string) {
 	}
 }
 
+//127.0.0.1:7001  path = CreateGenesisBlock
+// 第一次的话，需要和对应目的地址创建新的链接
 func (c *Client) newConnIfNotExist(dst *network.ServerIdentity, path string) (*websocket.Conn, error) {
-	log.Info(path)
+	log.Info("newConnIfNotExist")
 	var err error
 
 	// TODO we are opening a new connection for every new path?
 	// not possible to use an existing connection for the same service?
 	dest := destination{dst, path}
-	conn, ok := c.connections[dest]
+	conn, ok := c.connections[dest] //如果返回true，表示这个值曾经存在过
 
 	if !ok {
+		log.Info("OK = false")
 		d := &websocket.Dialer{}
 		d.TLSClientConfig = c.TLSClientConfig
 
@@ -315,7 +318,8 @@ func (c *Client) newConnIfNotExist(dst *network.ServerIdentity, path string) (*w
 		var header http.Header
 
 		// If the URL is in the dst, then use it.
-		if dst.URL != "" {
+		if dst.URL != "" { //只要有指向就不会是空
+			fmt.Println("dst.URL != null")
 			u, err := url.Parse(dst.URL)
 			if err != nil {
 				return nil, err
@@ -329,6 +333,7 @@ func (c *Client) newConnIfNotExist(dst *network.ServerIdentity, path string) (*w
 			serverURL = u.String()
 			header = http.Header{"Origin": []string{dst.URL}}
 		} else {
+			fmt.Println("dst.URL == null")
 			// Open connection to service.
 			hp, err := getWSHostPort(dst, false)
 			if err != nil {
@@ -345,6 +350,7 @@ func (c *Client) newConnIfNotExist(dst *network.ServerIdentity, path string) (*w
 				wsProtocol = "wss"
 				protocol = "https"
 			} else {
+				fmt.Println("ws & http")
 				wsProtocol = "ws"
 				protocol = "http"
 			}
@@ -352,14 +358,16 @@ func (c *Client) newConnIfNotExist(dst *network.ServerIdentity, path string) (*w
 			header = http.Header{"Origin": []string{protocol + "://" + hp}} // map[Origin:[http://127.0.0.1:7001]]
 		}
 
+		fmt.Println(network.MaxRetryConnect) //最大重试连接次数是5次
 		// Re-try to connect in case the websocket is just about to start
-		for a := 0; a < network.MaxRetryConnect; a++ {
+		// for a := 0; a < network.MaxRetryConnect; a++ {
+			// fmt.Println(a)
 			conn, _, err = d.Dial(serverURL, header)
-			if err == nil {
-				break
-			}
-			time.Sleep(network.WaitRetry)
-		}
+			// if err == nil {
+			// 	// break
+			// }
+			// time.Sleep(network.WaitRetry)
+		// }
 		if err != nil {
 			return nil, err
 		}
@@ -373,13 +381,14 @@ func (c *Client) Send(dst *network.ServerIdentity, path string, buf []byte) ([]b
 	c.Lock()
 	defer c.Unlock()
 
+	log.Info("send")
 	conn, err := c.newConnIfNotExist(dst, path)
 	if err != nil {
 		return nil, err
 	}
 	defer c.closeSingleUseConn(dst, path)
 
-	log.Infof("Sending %x to %s/%s", buf, c.service, path)
+	log.Lvlf4("Sending %x to %s/%s", buf, c.service, path)
 	if err := conn.WriteMessage(websocket.BinaryMessage, buf); err != nil {
 		return nil, err
 	}
@@ -406,11 +415,12 @@ func (c *Client) Send(dst *network.ServerIdentity, path string, buf []byte) ([]b
 // client. If there is no error, the ret-structure is filled with the
 // data from the service.
 func (c *Client) SendProtobuf(dst *network.ServerIdentity, msg interface{}, ret interface{}) error {
+	log.Info("SendProtobuf")
 	buf, err := protobuf.Encode(msg)
 	if err != nil {
 		return err
 	}
-	path := strings.Split(reflect.TypeOf(msg).String(), ".")[1]
+	path := strings.Split(reflect.TypeOf(msg).String(), ".")[1] //CreateGenesisBlock
 	reply, err := c.Send(dst, path, buf)
 	if err != nil {
 		return err
