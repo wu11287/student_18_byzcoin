@@ -3,14 +3,17 @@ package service
 import (
 	"testing"
 
-	"github.com/dedis/student_18_omniledger/omniledger/darc"
+	"student_18_byzcoin/omniledger/darc"
+	// "github.com/dedis/student_18_omniledger/omniledger/darc"
 	"github.com/stretchr/testify/require"
 )
 
+//把s的内容拷贝到n中返回， 也就是nonce值的str形式
 func nonceStr(s string) (n Nonce) {
 	copy(n[:], s)
 	return n
 }
+//拷贝s到n并返回
 func darcidStr(s string) (n darc.ID) {
 	n = make([]byte, 32)
 	copy(n, s)
@@ -84,6 +87,10 @@ func TestSortTransactions(t *testing.T) {
 	}
 	err := sortTransactions(ts1)
 	require.Nil(t, err)
+	// for i := range ts1 {
+	// 	byteVal := ts1[i].Instructions[i].Spawn.ContractID
+	// 	fmt.Println(byteVal)
+	// }
 	err = sortTransactions(ts2)
 	require.Nil(t, err)
 	for i := range ts1 {

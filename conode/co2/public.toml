@@ -1,5 +1,5 @@
 [[servers]]
-  Address = "tcp://localhost:15004"
+  Address = "tls://127.0.0.1:7100"
   Suite = "Ed25519"
-  Public = "4706d99de05a58179ccc11ea3c452d9e44b43290de696f83f0fbc8ae26b6679a"
-  Description = "Conode_2"
+  Public = "c56ba7340d9c65c28fb9c3e1e41db1b33fcac99e10185cbf049e5dd02cae620a"
+  Description = "co2"

@@ -3,7 +3,8 @@
 DBG_TEST=1
 DBG_APP=2
 
-. $(go env GOPATH)/src/github.com/dedis/onet/app/libtest.sh
+. ~/go/src/onet/app/libtest.sh
+# . $(go env GOPATH)/src/github.com/dedis/onet/app/libtest.sh
 
 main(){
     startTest

@@ -2,7 +2,7 @@
 package service
 
 import (
-	"bytes"
+	// "bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -19,8 +19,10 @@ import (
 	"gopkg.in/satori/go.uuid.v1"
 
 	"github.com/dedis/protobuf"
-	"github.com/dedis/student_18_omniledger/omniledger/collection"
-	"github.com/dedis/student_18_omniledger/omniledger/darc"
+	"student_18_byzcoin/omniledger/collection"
+	"student_18_byzcoin/omniledger/darc"
+	// "github.com/dedis/student_18_omniledger/omniledger/collection"
+	// "github.com/dedis/student_18_omniledger/omniledger/darc"
 )
 
 const darcIDLen int = 32
@@ -320,11 +322,11 @@ func (s *Service) createNewBlock(scID skipchain.SkipBlockID, r *onet.Roster, cts
 	}
 
 	// Store transactions in the body
-	body := &DataBody{Transactions: ctsOK}
-	sb.Payload, err = network.Marshal(body)
-	if err != nil {
-		return nil, errors.New("Couldn't marshal data: " + err.Error())
-	}
+	// body := &DataBody{Transactions: ctsOK}
+	// sb.Payload, err = network.Marshal(body)
+	// if err != nil {
+	// 	return nil, errors.New("Couldn't marshal data: " + err.Error())
+	// }
 
 	var ssb = skipchain.StoreSkipBlock{
 		NewBlock:          sb,
@@ -355,46 +357,47 @@ func (s *Service) createNewBlock(scID skipchain.SkipBlockID, r *onet.Roster, cts
 // It is called by the leader, and every node will add the
 // transactions in the block to its collection.
 func (s *Service) updateCollection(msg network.Message) {
-	uc, ok := msg.(*updateCollection)
+	_, ok := msg.(*updateCollection)
+	// uc, ok := msg.(*updateCollection)
 	if !ok {
 		return
 	}
 
-	sb, err := s.db().GetLatestByID(uc.ID)
-	if err != nil {
-		log.Errorf("didn't find latest block for %x", uc.ID)
-		return
-	}
-	_, dataI, err := network.Unmarshal(sb.Data, cothority.Suite)
-	data, ok := dataI.(*DataHeader)
-	if err != nil || !ok {
-		log.Error("couldn't unmarshal header")
-		return
-	}
-	_, bodyI, err := network.Unmarshal(sb.Payload, cothority.Suite)
-	body, ok := bodyI.(*DataBody)
-	if err != nil || !ok {
-		log.Error("couldn't unmarshal body", err, ok)
-		return
-	}
+	// sb, err := s.db().GetLatestByID(uc.ID)
+	// if err != nil {
+	// 	log.Errorf("didn't find latest block for %x", uc.ID)
+	// 	return
+	// }
+	// _, dataI, err := network.Unmarshal(sb.Data, cothority.Suite)
+	// data, ok := dataI.(*DataHeader)
+	// if err != nil || !ok {
+	// 	log.Error("couldn't unmarshal header")
+	// 	return
+	// }
+	// _, bodyI, err := network.Unmarshal(sb.Payload, cothority.Suite)
+	// body, ok := bodyI.(*DataBody)
+	// if err != nil || !ok {
+	// 	log.Error("couldn't unmarshal body", err, ok)
+	// 	return
+	// }
 
-	log.Lvlf2("%s: Updating transactions for %x", s.ServerIdentity(), sb.SkipChainID())
-	cdb := s.getCollection(sb.SkipChainID())
-	_, _, scs, err := s.createStateChanges(cdb.coll, body.Transactions)
-	if err != nil {
-		log.Error("Couldn't recreate state changes:", err.Error())
-		return
-	}
-	for _, sc := range scs {
-		log.Lvl2("Storing statechange", sc)
-		err = cdb.Store(&sc)
-		if err != nil {
-			log.Error("error while storing in collection: " + err.Error())
-		}
-	}
-	if !bytes.Equal(cdb.RootHash(), data.CollectionRoot) {
-		log.Error("hash of collection doesn't correspond to root hash")
-	}
+// 	log.Lvlf2("%s: Updating transactions for %x", s.ServerIdentity(), sb.SkipChainID())
+// 	cdb := s.getCollection(sb.SkipChainID())
+// 	_, _, scs, err := s.createStateChanges(cdb.coll, body.Transactions)
+// 	if err != nil {
+// 		log.Error("Couldn't recreate state changes:", err.Error())
+// 		return
+// 	}
+// 	for _, sc := range scs {
+// 		log.Lvl2("Storing statechange", sc)
+// 		err = cdb.Store(&sc)
+// 		if err != nil {
+// 			log.Error("error while storing in collection: " + err.Error())
+// 		}
+// 	}
+// 	if !bytes.Equal(cdb.RootHash(), data.CollectionRoot) {
+// 		log.Error("hash of collection doesn't correspond to root hash")
+// 	}
 }
 
 func (s *Service) getCollection(id skipchain.SkipBlockID) *collectionDB {
@@ -516,37 +519,38 @@ func (s *Service) createQueueWorker(scID skipchain.SkipBlockID, interval time.Du
 // so we can access e.g. the collectionDBs of the service.
 func (s *Service) verifySkipBlock(newID []byte, newSB *skipchain.SkipBlock) bool {
 	_, headerI, err := network.Unmarshal(newSB.Data, cothority.Suite)
-	header, ok := headerI.(*DataHeader)
+	_, ok := headerI.(*DataHeader)
+	// header, ok := headerI.(*DataHeader)
 	if err != nil || !ok {
 		log.Errorf("couldn't unmarshal header")
 		return false
 	}
-	_, bodyI, err := network.Unmarshal(newSB.Payload, cothority.Suite)
-	body, ok := bodyI.(*DataBody)
-	if err != nil || !ok {
-		log.Error("couldn't unmarshal body", err, ok)
-		return false
-	}
+	// _, bodyI, err := network.Unmarshal(newSB.Payload, cothority.Suite)
+	// body, ok := bodyI.(*DataBody)
+	// if err != nil || !ok {
+	// 	log.Error("couldn't unmarshal body", err, ok)
+	// 	return false
+	// }
 
-	if bytes.Compare(header.ClientTransactionHash, body.Transactions.Hash()) != 0 {
-		log.Lvl2(s.ServerIdentity(), "Client Transaction Hash doesn't verify")
-		return false
-	}
-	ctx := body.Transactions
-	cdb := s.getCollection(newSB.Hash)
-	mtr, _, scs, err := s.createStateChanges(cdb.coll, ctx)
-	if err != nil {
-		log.Error("Couldn't create state changes:", err)
-		return false
-	}
-	if bytes.Compare(header.CollectionRoot, mtr) != 0 {
-		log.Lvl2(s.ServerIdentity(), "Collection root doesn't verify")
-		return false
-	}
-	if bytes.Compare(header.StateChangesHash, scs.Hash()) != 0 {
-		log.Lvl2(s.ServerIdentity(), "State Changes hash doesn't verify")
-		return false
-	}
+	// if bytes.Compare(header.ClientTransactionHash, body.Transactions.Hash()) != 0 {
+	// 	log.Lvl2(s.ServerIdentity(), "Client Transaction Hash doesn't verify")
+	// 	return false
+	// }
+	// ctx := body.Transactions
+	// cdb := s.getCollection(newSB.Hash)
+	// mtr, _, scs, err := s.createStateChanges(cdb.coll, ctx)
+	// if err != nil {
+	// 	log.Error("Couldn't create state changes:", err)
+	// 	return false
+	// }
+	// if bytes.Compare(header.CollectionRoot, mtr) != 0 {
+	// 	log.Lvl2(s.ServerIdentity(), "Collection root doesn't verify")
+	// 	return false
+	// }
+	// if bytes.Compare(header.StateChangesHash, scs.Hash()) != 0 {
+	// 	log.Lvl2(s.ServerIdentity(), "State Changes hash doesn't verify")
+	// 	return false
+	// }
 	return true
 }
 

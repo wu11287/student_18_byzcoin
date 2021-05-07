@@ -8,8 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dedis/student_18_omniledger/omniledger/collection"
-	"github.com/dedis/student_18_omniledger/omniledger/darc"
+	"student_18_byzcoin/omniledger/collection"
+	"student_18_byzcoin/omniledger/darc"
+	// "github.com/dedis/student_18_omniledger/omniledger/collection"
+	// "github.com/dedis/student_18_omniledger/omniledger/darc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/dedis/cothority.v2/skipchain"

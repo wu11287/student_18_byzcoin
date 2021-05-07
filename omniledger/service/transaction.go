@@ -13,8 +13,11 @@ import (
 	"gopkg.in/dedis/onet.v2/network"
 
 	"github.com/dedis/protobuf"
-	"github.com/dedis/student_18_omniledger/omniledger/collection"
-	"github.com/dedis/student_18_omniledger/omniledger/darc"
+	"student_18_byzcoin/omniledger/collection"
+	"student_18_byzcoin/omniledger/darc"
+
+	// "github.com/dedis/student_18_omniledger/omniledger/collection"
+	// "github.com/dedis/student_18_omniledger/omniledger/darc"
 )
 
 func init() {

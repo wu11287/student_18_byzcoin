@@ -3,7 +3,8 @@ package darc
 import (
 	"testing"
 
-	"github.com/dedis/student_18_omniledger/omniledger/darc/expression"
+	"student_18_byzcoin/omniledger/darc/expression"
+	// "github.com/dedis/student_18_omniledger/omniledger/darc/expression"
 	"github.com/stretchr/testify/require"
 )
 

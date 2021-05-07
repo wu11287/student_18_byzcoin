@@ -23,7 +23,7 @@ import (
 
 	"gopkg.in/dedis/cothority.v2"
 	// Import your service:
-	_ "github.com/dedis/student_18_omniledger/omniledger/service"
+	// _ "github.com/dedis/student_18_omniledger/omniledger/service"
 	// Here you can import any other needed service for your conode.
 	// For example, if your service needs cosi available in the server
 	// as well, uncomment this:

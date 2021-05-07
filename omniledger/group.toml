@@ -1,0 +1,15 @@
+[[servers]]
+  Address = "tls://127.0.0.1:7000"
+  Suite = "Ed25519"
+  Public = "f877ccc57714d6983c394ef787553df0f36d8e0e79f9c500d81eeefc6bb17105"
+  Description = "co1"
+[[servers]]
+  Address = "tls://127.0.0.1:7100"
+  Suite = "Ed25519"
+  Public = "c56ba7340d9c65c28fb9c3e1e41db1b33fcac99e10185cbf049e5dd02cae620a"
+  Description = "co2"
+[[servers]]
+  Address = "tls://127.0.0.1:7200"
+  Suite = "Ed25519"
+  Public = "d1821c3636bf0ea9bcf5574e243318672e92b4df5cabd4cbc95fa0ec2c461df7"
+  Description = "co3"

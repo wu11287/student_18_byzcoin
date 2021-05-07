@@ -3,9 +3,11 @@ package darc_test
 import (
 	"bytes"
 	"fmt"
+	"student_18_byzcoin/omniledger/darc"
+	"student_18_byzcoin/omniledger/darc/expression"
 
-	"github.com/dedis/student_18_omniledger/omniledger/darc"
-	"github.com/dedis/student_18_omniledger/omniledger/darc/expression"
+	// "github.com/dedis/student_18_omniledger/omniledger/darc"
+	// "github.com/dedis/student_18_omniledger/omniledger/darc/expression"
 )
 
 func Example() {

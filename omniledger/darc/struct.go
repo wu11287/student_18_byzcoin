@@ -4,7 +4,9 @@ import (
 	"gopkg.in/dedis/kyber.v2"
 	"gopkg.in/dedis/onet.v2/network"
 
-	"github.com/dedis/student_18_omniledger/omniledger/darc/expression"
+	"student_18_byzcoin/omniledger/darc/expression"
+
+	// "github.com/dedis/student_18_omniledger/omniledger/darc/expression"
 )
 
 func init() {

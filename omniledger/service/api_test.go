@@ -4,7 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dedis/student_18_omniledger/omniledger/darc"
+	"student_18_byzcoin/omniledger/darc"
+	// "github.com/dedis/student_18_omniledger/omniledger/darc"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/dedis/cothority.v2"
 	"gopkg.in/dedis/onet.v2"

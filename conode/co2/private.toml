@@ -1,7 +1,10 @@
 # This file contains your private key.
 # Do not give it away lightly!
 Suite = "Ed25519"
-Public = "4706d99de05a58179ccc11ea3c452d9e44b43290de696f83f0fbc8ae26b6679a"
-Private = "c256784c3a5e35498e6699f86d49facaf0c3cb9e312746dfcdfb6b15081e9100"
-Address = "tcp://localhost:15004"
-Description = "Conode_2"
+Public = "c56ba7340d9c65c28fb9c3e1e41db1b33fcac99e10185cbf049e5dd02cae620a"
+Private = "7f64f69d5beea9fc9d937850f6dad25e6bbac2ecc945758823743ffd784a730d"
+Address = "tls://127.0.0.1:7100"
+ListenAddress = ""
+Description = "co2"
+WebSocketTLSCertificate = ""
+WebSocketTLSCertificateKey = ""

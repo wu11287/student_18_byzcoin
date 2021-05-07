@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/dedis/student_18_omniledger/omniledger/collection"
+	// "github.com/dedis/student_18_omniledger/omniledger/collection"
+	"student_18_byzcoin/omniledger/collection"
 	"gopkg.in/dedis/cothority.v2"
 	"gopkg.in/dedis/cothority.v2/skipchain"
 	"gopkg.in/dedis/kyber.v2"

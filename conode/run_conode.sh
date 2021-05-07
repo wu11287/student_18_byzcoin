@@ -19,7 +19,8 @@ all_args="$*"
 VERSION_SUB="1"
 # increment version in onet if there's something that changes that needs
 # migration.
-ONET_PATH="$(go env GOPATH)/src/github.com/dedis/onet"
+# ONET_PATH="$(go env GOPATH)/src/github.com/dedis/onet"
+ONET_PATH="$(go env GOPATH)/src/onet"
 VERSION_ONET=$( grep "const Version" $ONET_PATH/onet.go | sed -e "s/.* \"\(.*\)\"/\1/g" )
 VERSION="$VERSION_ONET-$VERSION_SUB"
 

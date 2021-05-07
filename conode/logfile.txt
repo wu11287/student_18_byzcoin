@@ -1,0 +1,1 @@
+[-] Configuration file does not exist. /root/.config/omniledger/config.bin

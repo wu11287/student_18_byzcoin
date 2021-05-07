@@ -6,8 +6,10 @@ import (
 	"errors"
 	"os"
 
-	"github.com/dedis/student_18_omniledger/omniledger/darc"
-	"github.com/dedis/student_18_omniledger/omniledger/service"
+	"student_18_byzcoin/omniledger/darc"
+	"student_18_byzcoin/omniledger/service"
+	// "github.com/dedis/student_18_omniledger/omniledger/darc"
+	// "github.com/dedis/student_18_omniledger/omniledger/service"
 
 	"gopkg.in/dedis/cothority.v2"
 	"gopkg.in/dedis/kyber.v2/util/key"
@@ -61,13 +63,15 @@ func create(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	// tmp := group.Roster.List[0].URL
+	// fmt.Println(tmp)
 	resp, err := client.CreateGenesisBlock(group.Roster, msg)
 	if err != nil {
 		return errors.New("during creation of skipchain: " + err.Error())
 	}
 	log.Infof("Created new skipchain on roster %s with ID: %x", group.Roster.List, resp.Skipblock.Hash)
 	log.Infof("Private: %s", kp.Private)
-	log.Infof(" Public: %s", kp.Public)
+	log.Infof("Public: %s", kp.Public)
 	return nil
 }
 
