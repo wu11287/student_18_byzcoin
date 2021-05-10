@@ -335,38 +335,39 @@ func (c *Client) newConnIfNotExist(dst *network.ServerIdentity, path string) (*w
 		} else {
 			fmt.Println("dst.URL == null")
 			// Open connection to service.
-			hp, err := getWSHostPort(dst, false)
+			hp, err := getWSHostPort(dst, false) //hp: 127.0.0.1/7001
 			if err != nil {
 				return nil, err
 			}
 
-			var wsProtocol string
+			// var wsProtocol string
 			var protocol string
 
 			// The old hacky way of deciding if this server has HTTPS or not:
 			// the client somehow magically knows and tells onet by setting
 			// c.TLSClientConfig to a non-nil value.
 			if c.TLSClientConfig != nil {
-				wsProtocol = "wss"
+				// wsProtocol = "wss"
 				protocol = "https"
 			} else {
 				fmt.Println("ws & http")
-				wsProtocol = "ws"
+				// wsProtocol = "ws"
 				protocol = "http"
 			}
-			serverURL = fmt.Sprintf("%s://%s/%s/%s", wsProtocol, hp, c.service, path) // ws://127.0.0.1:7001/OmniLedger/CreateGenesisBlock
+			// serverURL = fmt.Sprintf("%s://%s/%s/%s", wsProtocol, hp, c.service, path) // ws://127.0.0.1:7001/OmniLedger/CreateGenesisBlock
+			serverURL = "ws://127.0.0.1:7001"
 			header = http.Header{"Origin": []string{protocol + "://" + hp}} // map[Origin:[http://127.0.0.1:7001]]
 		}
 
 		fmt.Println(network.MaxRetryConnect) //最大重试连接次数是5次
 		// Re-try to connect in case the websocket is just about to start
 		// for a := 0; a < network.MaxRetryConnect; a++ {
-			// fmt.Println(a)
+		// 	fmt.Println(a)
 			conn, _, err = d.Dial(serverURL, header)
-			// if err == nil {
-			// 	// break
-			// }
-			// time.Sleep(network.WaitRetry)
+		// 	if err == nil {
+		// 		break
+		// 	}
+		// 	time.Sleep(network.WaitRetry)
 		// }
 		if err != nil {
 			return nil, err
@@ -377,21 +378,26 @@ func (c *Client) newConnIfNotExist(dst *network.ServerIdentity, path string) (*w
 }
 
 // Send will marshal the message into a ClientRequest message and send it.
+// 解码发往客户端的请求，
 func (c *Client) Send(dst *network.ServerIdentity, path string, buf []byte) ([]byte, error) {
 	c.Lock()
 	defer c.Unlock()
 
 	log.Info("send")
-	conn, err := c.newConnIfNotExist(dst, path)
+	log.Info("dst=", dst) //dst= tls://127.0.0.1:7000
+	conn, err := c.newConnIfNotExist(dst, path) 
+	fmt.Println("err=", err)
 	if err != nil {
 		return nil, err
 	}
 	defer c.closeSingleUseConn(dst, path)
 
-	log.Lvlf4("Sending %x to %s/%s", buf, c.service, path)
+	// log.Infof("Sending %x to %s/%s", buf, c.service, path)
+	log.Infof("Sending to %s/%s", c.service, path)
 	if err := conn.WriteMessage(websocket.BinaryMessage, buf); err != nil {
 		return nil, err
 	}
+
 	c.tx += uint64(len(buf))
 
 	if err := conn.SetReadDeadline(time.Now().Add(5 * time.Minute)); err != nil {
@@ -553,5 +559,7 @@ func getWSHostPort(si *network.ServerIdentity, global bool) (string, error) {
 	if global {
 		host = "0.0.0.0"
 	}
+	res := net.JoinHostPort(host, strconv.Itoa(p+1))
+	fmt.Println("res = ", res)
 	return net.JoinHostPort(host, strconv.Itoa(p+1)), nil
 }

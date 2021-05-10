@@ -1001,6 +1001,7 @@ func (c *Conn) NextReader() (messageType int, r io.Reader, err error) {
 	if c.readErrCount >= 1000 {
 		panic("repeated read on failed websocket connection")
 	}
+	fmt.Printf("readErr= %s\n",c.readErr)
 
 	return noFrame, nil, c.readErr
 }
@@ -1064,11 +1065,13 @@ func (c *Conn) ReadMessage() (messageType int, p []byte, err error) {
 	fmt.Println("ReadMessage start ")
 	var r io.Reader
 	messageType, r, err = c.NextReader()
+	fmt.Println(messageType) //-1
 	if err != nil {
+		fmt.Println(err)
 		return messageType, nil, err
 	}
-	p, err = ioutil.ReadAll(r)
 	fmt.Println("ReadMessage end ")
+	p, err = ioutil.ReadAll(r)
 
 	return messageType, p, err
 }

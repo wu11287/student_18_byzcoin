@@ -10,7 +10,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"io"
+	// "io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -103,7 +103,11 @@ type Dialer struct {
 }
 
 // Dial creates a new client connection by calling DialContext with a background context.
+// 创建客户端连接
 func (d *Dialer) Dial(urlStr string, requestHeader http.Header) (*Conn, *http.Response, error) {
+	fmt.Println("Dial")
+	fmt.Println(urlStr)
+	fmt.Println(requestHeader) //map[Origin:[http://127.0.0.1:7001]]
 	return d.DialContext(context.Background(), urlStr, requestHeader)
 }
 
@@ -148,7 +152,7 @@ var nilDialer = *DefaultDialer
 // etcetera. The response body may not contain the entire response and does not
 // need to be closed by the application.
 func (d *Dialer) DialContext(ctx context.Context, urlStr string, requestHeader http.Header) (*Conn, *http.Response, error) {
-	fmt.Println("DialContext start")
+	// fmt.Println(urlStr) //ws://127.0.0.1:7001/OmniLedger/CreateGenesisBlock
 	if d == nil {
 		d = &nilDialer
 	}
@@ -240,12 +244,16 @@ func (d *Dialer) DialContext(ctx context.Context, urlStr string, requestHeader h
 	var netDial func(network, add string) (net.Conn, error)
 
 	if d.NetDialContext != nil {
+		// fmt.Println("1")
 		netDial = func(network, addr string) (net.Conn, error) {
 			return d.NetDialContext(ctx, network, addr)
 		}
 	} else if d.NetDial != nil {
+		// fmt.Println("2")
 		netDial = d.NetDial
 	} else {
+		fmt.Println("3")
+
 		netDialer := &net.Dialer{}
 		netDial = func(network, addr string) (net.Conn, error) {
 			return netDialer.DialContext(ctx, network, addr)
@@ -327,7 +335,6 @@ func (d *Dialer) DialContext(ctx context.Context, urlStr string, requestHeader h
 	}
 
 	conn := newConn(netConn, false, d.ReadBufferSize, d.WriteBufferSize, d.WriteBufferPool, nil, nil)
-
 	if err := req.Write(netConn); err != nil {
 		return nil, nil, err
 	}
@@ -348,19 +355,22 @@ func (d *Dialer) DialContext(ctx context.Context, urlStr string, requestHeader h
 			d.Jar.SetCookies(u, rc)
 		}
 	}
+	fmt.Println(resp.StatusCode)
+	fmt.Println(strings.EqualFold(resp.Header.Get("Upgrade"), "websocket"))
+	fmt.Println(strings.EqualFold(resp.Header.Get("Connection"), "upgrade"))
 
-	if resp.StatusCode != 101 ||
-		!strings.EqualFold(resp.Header.Get("Upgrade"), "websocket") ||
-		!strings.EqualFold(resp.Header.Get("Connection"), "upgrade") ||
-		resp.Header.Get("Sec-Websocket-Accept") != computeAcceptKey(challengeKey) {
-		// Before closing the network connection on return from this
-		// function, slurp up some of the response to aid application
-		// debugging.
-		buf := make([]byte, 1024)
-		n, _ := io.ReadFull(resp.Body, buf)
-		resp.Body = ioutil.NopCloser(bytes.NewReader(buf[:n]))
-		return nil, resp, ErrBadHandshake
-	}
+	// if resp.StatusCode != 101 ||
+	// 	!strings.EqualFold(resp.Header.Get("Upgrade"), "websocket") ||
+	// 	!strings.EqualFold(resp.Header.Get("Connection"), "upgrade") ||
+	// 	resp.Header.Get("Sec-Websocket-Accept") != computeAcceptKey(challengeKey) {
+	// 	// Before closing the network connection on return from this
+	// 	// function, slurp up some of the response to aid application
+	// 	// debugging.
+	// 	buf := make([]byte, 1024)
+	// 	n, _ := io.ReadFull(resp.Body, buf)
+	// 	resp.Body = ioutil.NopCloser(bytes.NewReader(buf[:n]))
+	// 	return nil, resp, ErrBadHandshake
+	// }
 
 	for _, ext := range parseExtensions(resp.Header) {
 		if ext[""] != "permessage-deflate" {
@@ -381,8 +391,6 @@ func (d *Dialer) DialContext(ctx context.Context, urlStr string, requestHeader h
 
 	netConn.SetDeadline(time.Time{})
 	netConn = nil // to avoid close in defer.
-
-	fmt.Println("DialContext start")
 	return conn, resp, nil
 }
 
