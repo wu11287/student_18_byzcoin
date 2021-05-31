@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.cpp": "cpp",
+        "crypto_verify_32.h": "c"
+    }
+}
