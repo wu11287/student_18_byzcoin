@@ -1,12 +1,13 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"math/rand"
 	crypto "myProject/crypto"
+	"sync"
 	"time"
-	"bytes"
-	"encoding/binary"
 )
 
 const denominator float64 = 18446744073709551615
@@ -53,8 +54,11 @@ func newNode(nNode *node, i int) {
 }
 
 //每个节点把自己的公钥写到所有节点管道中
-func broadcastPK(ch []chan interface{}, nNode *node, i int) {
-	for {
+func broadcastPK(ch []chan interface{}, nNode *node, i int, deferFunc func()) {
+	defer func(){
+		deferFunc()
+	}()
+	for i:= 0; i < 4; i++ {
 		select {
 		case ch[0] <- nNode.pk:
 			fmt.Printf("node %d sendPK to ch[0] success!", i)
@@ -70,7 +74,10 @@ func broadcastPK(ch []chan interface{}, nNode *node, i int) {
 	}
 }
 
-func broadcastProof(ch []chan interface{}, nNode *node, i int) {
+func broadcastProof(ch []chan interface{}, nNode *node, i int, deferFunc func()) {
+	defer func(){
+		deferFunc()
+	}()
 	for {
 		select {
 		case ch[0] <- nNode.proof:
@@ -88,6 +95,7 @@ func broadcastProof(ch []chan interface{}, nNode *node, i int) {
 }
 
 func main() {
+	var wg sync.WaitGroup
 	chs := make([]chan interface{}, 4)
 	nodes := [4]node{}
 	rand.Seed(time.Now().Unix()) //以当前时间，更新随机种子
@@ -98,12 +106,13 @@ func main() {
 	//生成所有节点的公私钥
 	for i := 0; i < 4; i++ {
 		chs[i] = make(chan interface{})
+		wg.Add(1)
 		newNode(&nodes[i], i)  
 	}
 
 	// 广播公钥
 	for i := 0; i < 4; i++ {
-		broadcastPK(chs, &nodes[i], i)
+		broadcastPK(chs, &nodes[i], i, wg.Done)
 	}
 	//加密抽签
 	for i := 0; i < 4; i++ {
@@ -111,8 +120,9 @@ func main() {
 	}
 	//广播Proof
 	for i := 0; i < 4; i++ {
-		broadcastProof(chs, &nodes[i], i)
+		broadcastProof(chs, &nodes[i], i, wg.Done)
 	}
+	wg.Wait()
 
 	identified := make([]int, 0)
 	for i := 0; i < 4; i++ {
