@@ -1,8 +1,8 @@
 package main
 
 import (
-	// "bytes"
-	// "encoding/binary"
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"math/rand"
 	crypto "myProject/crypto"
@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// const denominator float64 = 18446744073709551615
+const denominator float64 = 18446744073709551615
 
 type node struct {
 	id     int
@@ -180,16 +180,16 @@ func main() {
 	// }
 }
 
-// func isMeet(nNode *node) bool {
-// 	bytesBuffer := bytes.NewBuffer(nNode.rnd[:])
-// 	var x int64
-// 	binary.Read(bytesBuffer, binary.BigEndian, &x)
+func isMeet(nNode *node) bool {
+	bytesBuffer := bytes.NewBuffer(nNode.rnd[:])
+	var x int64
+	binary.Read(bytesBuffer, binary.BigEndian, &x)
 
-//   	rnd := float64(x)
-// 	if rnd < 0 {
-// 		rnd += denominator
-// 	}
+  	rnd := float64(x)
+	if rnd < 0 {
+		rnd += denominator
+	}
 
-// 	p := rnd/denominator
-// 	return p < 0.7
-// }
+	p := rnd/denominator
+	return p < 0.7
+}
