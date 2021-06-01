@@ -12,8 +12,6 @@ import (
 
 const denominator float64 = 18446744073709551615
 
-var randomness []byte
-
 type node struct {
 	id     		int
 	weight 		int
@@ -23,7 +21,6 @@ type node struct {
 	proof  		crypto.VrfProof
 	pkList 		[4]crypto.VrfPubkey
 	proofList 	[4]crypto.VrfProof
-	// rndList		[4]float64 //存放所有满足条件的节点的rnd ； rnd不需要记录
 	idList 		[]int
 }
 
@@ -75,9 +72,10 @@ func newNode(nNode *node, i int) {
 	nNode.id = i
 	nNode.weight = i
 	nNode.pk, nNode.sk = crypto.VrfKeygen()
+	// fmt.Println("newNode", i, nNode.pk, nNode.sk)
 }
 
-//每个节点把自己的公钥写到所有节点管道中 -- 此时公钥是已经生成的
+//每个节点把自己的公钥、id 写到管道
 func broadcastPK(ch []chan *pkAndId, nNode *node, id int, deferFunc func()) {
 	defer func() {
 		deferFunc()
@@ -107,6 +105,7 @@ func broadcastRnd(ch []chan *RndAndId, nNode *node, id int, deferFunc func()) {
 	}()
 	p := isMeet(nNode)
 	fmt.Printf("broadcastRnd id = %d, p = %f", id, p)
+	fmt.Println()
 	var isin bool
 	if p > 0.7 {
 		isin = false
@@ -143,36 +142,34 @@ func storeProof(ch chan *ProofAndId, nNode *[4]node, id int, deferFunc func()) {
 	}
 }
 
-// 对于不满足要求的，p、rnd都是0
-func storeRnd(ch chan *RndAndId, nNode *[4]node, id int, deferFunc func()) {
+
+func storeRnd(ch chan *RndAndId, nNode *[4]node, id int, deferFunc func(), randomness []byte) {
 	defer func(){
 		deferFunc()
 	}()
-	for {
+
+	for i:=0; i < 4; i++ {
 		tmp := <- ch
-		// 验证是否该节点真的满足条件
+		// 如果满足条件，就验证后加入idlist
 		if tmp.in {
-			ok := verifyRnd(nNode[id].pkList[tmp.id], nNode[id].proofList[tmp.id], tmp.rnd, randomness)
-			if !ok {
-				fmt.Println("the node bad!")
-				continue
-			}
-			nNode[id].idList = append(nNode[id].idList, tmp.id)
+			go verifyRnd(nNode[id].pkList[tmp.id], nNode[id].proofList[tmp.id], tmp.rnd, randomness, id, nNode, tmp.id)
 		}
 	}
 }
 
 // 验证rnd是否正确，判断节点是否说谎
-func verifyRnd(pk crypto.VrfPubkey, proof crypto.VrfProof, output crypto.VrfOutput,  msg []byte) bool {
+func verifyRnd(pk crypto.VrfPubkey, proof crypto.VrfProof, output crypto.VrfOutput,  msg []byte, id int, nNode *[4]node, tmpId int) {
+	var mutex sync.Mutex
+	mutex.Lock()
+	defer mutex.Unlock()
 	ok, output2 := pk.VerifyMy(proof, msg)
 	if !ok {
 		fmt.Println("verified error")
-		return false
+		return
 	}
 	if output == output2 {
-		return true
+		nNode[id].idList = append(nNode[id].idList, tmpId)
 	}
-	return false
 }
 
 
@@ -183,20 +180,22 @@ func main() {
 	chsProof := make([]chan *ProofAndId, 4)
 	chsRnd := make([]chan *RndAndId, 4)
 	nodes := [4]node{}
-	rand.Seed(time.Now().Unix()) //以当前时间，更新随机种子
+	rand.Seed(time.Now().Unix())
 	randomness, err := GenerateRandomBytes(10)
+
 	if err != nil {
 		fmt.Println("generate random byte[] failed!")
 	}
 	//生成所有节点的公私钥
 	for i := 0; i < 4; i++ {
-		// chsPK[i] = make(chan crypto.VrfPubkey)
 		chsPK[i] = make(chan *pkAndId)
 		chsProof[i] = make(chan *ProofAndId)
 		chsRnd[i] = make(chan *RndAndId)
 		wg.Add(1)
 		go newNode(&nodes[i], i)
 	}
+
+	time.Sleep(time.Second * 1)
 
 	// 广播公钥
 	for i := 0; i < 4; i++ {
@@ -209,11 +208,15 @@ func main() {
 		go storePk(chsPK[i], &nodes, i, wg.Done)
 	}
 	
+	time.Sleep(time.Second * 1) //使得程序运行到此的时候已经广播公钥完毕
+
 	//加密抽签
 	for i := 0; i < 4; i++ {
 		wg.Add(1)
 		go Sotition(&nodes[i], randomness)
 	}
+
+	//实际上会在加密抽签后，先判断自己是不是被选中，被选中就打包区块。并将rnd和proof随着区块一起广播
 	//广播Proof、rnd
 	for i := 0; i < 4; i++ {
 		proof, ok1 := nodes[i].sk.ProveMy(randomness)
@@ -233,12 +236,20 @@ func main() {
 
 
 	for i := 0; i < 4; i++ {
-		wg.Add(2)
+		wg.Add(1)
 		go storeProof(chsProof[i], &nodes, i, wg.Done)
-		go storeRnd(chsRnd[i], &nodes, i, wg.Done)
 	}
 
+	for i := 0; i < 4; i++ {
+		wg.Add(1)
+		go storeRnd(chsRnd[i], &nodes, i, wg.Done, randomness)
+	}
 	fmt.Println("now")
+
+	for _, v := range nodes[0].idList {
+		fmt.Println(v)
+	}
+
 
 	wg.Wait()
 }
