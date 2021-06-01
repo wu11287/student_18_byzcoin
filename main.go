@@ -12,6 +12,8 @@ import (
 
 const denominator float64 = 18446744073709551615
 
+var randomness []byte
+
 type node struct {
 	id     		int
 	weight 		int
@@ -21,8 +23,28 @@ type node struct {
 	proof  		crypto.VrfProof
 	pkList 		[4]crypto.VrfPubkey
 	proofList 	[4]crypto.VrfProof
-	rndList		[4]map[int]float64 //key是id，value是概率p
+	// rndList		[4]float64 //存放所有满足条件的节点的rnd ； rnd不需要记录
+	idList 		[]int
 }
+
+
+type pkAndId struct {
+	id int
+	pk crypto.VrfPubkey
+}
+
+type ProofAndId struct {
+	id int
+	proof crypto.VrfProof
+}
+
+type RndAndId struct {
+	id int
+	rnd crypto.VrfOutput
+	p float64
+	in bool
+}
+
 
 //生成长度为 n 的随机byte数组
 func GenerateRandomBytes(n int) ([]byte, error) {
@@ -56,87 +78,110 @@ func newNode(nNode *node, i int) {
 }
 
 //每个节点把自己的公钥写到所有节点管道中 -- 此时公钥是已经生成的
-func broadcastPK(ch []chan crypto.VrfPubkey, nNode *node, deferFunc func()) {
+func broadcastPK(ch []chan *pkAndId, nNode *node, id int, deferFunc func()) {
 	defer func() {
 		deferFunc()
 	}()
-	ch[0] <- nNode.pk
-	ch[1] <- nNode.pk
-	ch[2] <- nNode.pk
-	ch[3] <- nNode.pk
+	tmp := &pkAndId{id, nNode.pk}
+	ch[0] <- tmp
+	ch[1] <- tmp
+	ch[2] <- tmp
+	ch[3] <- tmp
 }
 
-
-func broadcastProof(ch []chan crypto.VrfProof, nNode *node, deferFunc func()) {
+// 广播特定节点的proof
+func broadcastProof(ch []chan *ProofAndId, nNode *node, id int, deferFunc func()) {
 	defer func(){
 		deferFunc()
 	}()
-	ch[0] <- nNode.proof
-	ch[1] <- nNode.proof
-	ch[2] <- nNode.proof
-	ch[3] <- nNode.proof
+	tmp := &ProofAndId{id, nNode.proof}
+	ch[0] <- tmp
+	ch[1] <- tmp
+	ch[2] <- tmp
+	ch[3] <- tmp
 }
 
-func broadcastRnd(ch []chan float64, nNode *node, id int, deferFunc func()) {
+func broadcastRnd(ch []chan *RndAndId, nNode *node, id int, deferFunc func()) {
 	defer func(){
 		deferFunc()
 	}()
 	p := isMeet(nNode)
 	fmt.Printf("broadcastRnd id = %d, p = %f", id, p)
+	var isin bool
 	if p > 0.7 {
-		return //表示没有被选中
+		isin = false
+	} else {
+		isin = true
 	}
-	ch[0] <- p
-	ch[1] <- p
-	ch[2] <- p
-	ch[3] <- p
+	tmp := &RndAndId{id, nNode.rnd, p, isin}
+	
+	ch[0] <- tmp
+	ch[1] <- tmp
+	ch[2] <- tmp
+	ch[3] <- tmp
 }
 
 //持久化公钥到节点struct
-func storePk(ch chan crypto.VrfPubkey, nNode *[4]node, id int, deferFunc func()) {
-	defer func(){
-		deferFunc()
-	}()
-	for i := 0; i < 4; i++ {
-		val0 := <- ch
-		// nNode[id].pkList = append(nNode[id].pkList, val0)
-		nNode[id].pkList[id] = val0
-	}
-}
-
-func storeProof(ch chan crypto.VrfProof, nNode *[4]node, id int, deferFunc func()) {
+func storePk(ch chan *pkAndId, nNode *[4]node, id int, deferFunc func()) {
 	defer func(){
 		deferFunc()
 	}()
 	for {
-		val0 := <- ch
-		// nNode[id].proofList = append(nNode[id].proofList, val0)
-		nNode[id].proofList[id] = val0
+		tmp := <- ch
+		nNode[id].pkList[tmp.id] = tmp.pk
 	}
 }
 
-func storeRnd(ch chan float64, nNode *[4]node, id int, deferFunc func()) {
+func storeProof(ch chan *ProofAndId, nNode *[4]node, id int, deferFunc func()) {
 	defer func(){
 		deferFunc()
 	}()
-	for i := 0; i < 4; i++ {
-		val0 := <- ch
-		// nNode[id].proofList = append(nNode[id].proofList, val0)
-		nNode[id].rndList[id] = val0
+
+	for {
+		tmp := <- ch
+		nNode[id].proofList[tmp.id] = tmp.proof
+	}
+}
+
+// 对于不满足要求的，p、rnd都是0
+func storeRnd(ch chan *RndAndId, nNode *[4]node, id int, deferFunc func()) {
+	defer func(){
+		deferFunc()
+	}()
+	for {
+		tmp := <- ch
+		// 验证是否该节点真的满足条件
+		if tmp.in {
+			ok := verifyRnd(nNode[id].pkList[tmp.id], nNode[id].proofList[tmp.id], tmp.rnd, randomness)
+			if !ok {
+				fmt.Println("the node bad!")
+				continue
+			}
+			nNode[id].idList = append(nNode[id].idList, tmp.id)
+		}
 	}
 }
 
 // 验证rnd是否正确，判断节点是否说谎
-func verifyRnd() {
-
+func verifyRnd(pk crypto.VrfPubkey, proof crypto.VrfProof, output crypto.VrfOutput,  msg []byte) bool {
+	ok, output2 := pk.VerifyMy(proof, msg)
+	if !ok {
+		fmt.Println("verified error")
+		return false
+	}
+	if output == output2 {
+		return true
+	}
+	return false
 }
 
 
 func main() {
 	var wg sync.WaitGroup
-	chsPK := make([]chan crypto.VrfPubkey, 4) //四个节点的管道切片,管道传送公钥
-	chsProof := make([]chan crypto.VrfProof, 4)
-	chsRnd := make([]chan float64, 4)
+	// chsPK := make([]chan crypto.VrfPubkey, 4) //四个节点的管道切片,管道传送公钥
+	chsPK := make([]chan *pkAndId, 4) 
+	chsProof := make([]chan *ProofAndId, 4)
+	chsRnd := make([]chan *RndAndId, 4)
 	nodes := [4]node{}
 	rand.Seed(time.Now().Unix()) //以当前时间，更新随机种子
 	randomness, err := GenerateRandomBytes(10)
@@ -145,9 +190,10 @@ func main() {
 	}
 	//生成所有节点的公私钥
 	for i := 0; i < 4; i++ {
-		chsPK[i] = make(chan crypto.VrfPubkey) //实例化这个管道
-		chsProof[i] = make(chan crypto.VrfProof)
-		chsRnd[i] = make(chan float64)
+		// chsPK[i] = make(chan crypto.VrfPubkey)
+		chsPK[i] = make(chan *pkAndId)
+		chsProof[i] = make(chan *ProofAndId)
+		chsRnd[i] = make(chan *RndAndId)
 		wg.Add(1)
 		go newNode(&nodes[i], i)
 	}
@@ -155,7 +201,7 @@ func main() {
 	// 广播公钥
 	for i := 0; i < 4; i++ {
 		wg.Add(1)
-		go broadcastPK(chsPK, &nodes[i], wg.Done)
+		go broadcastPK(chsPK, &nodes[i], i, wg.Done)
 	}
 
 	for i := 0; i < 4; i++ {
@@ -181,7 +227,7 @@ func main() {
 		nodes[i].proof = proof
 		nodes[i].rnd = rnd
 		wg.Add(2)
-		go broadcastProof(chsProof, &nodes[i], wg.Done)
+		go broadcastProof(chsProof, &nodes[i], i, wg.Done)
 		go broadcastRnd(chsRnd, &nodes[i], i, wg.Done)
 	}
 
@@ -194,30 +240,7 @@ func main() {
 
 	fmt.Println("now")
 
-	for i, v := range nodes[0].rndList {
-		if v == 0.0 {
-			continue
-		}
-		fmt.Printf("node %d have probability %f\n", i, v)
-	}
 	wg.Wait()
-
-	
-
-
-	// identified := make([]int, 0)
-	// for i := 0; i < 4; i++ {
-	// 	ok := isMeet(&nodes[i])
-	// 	if !ok {
-	// 		continue
-	// 	}
-	// 	everyId := nodes[i].id
-	// 	identified = append(identified, everyId)
-	// }
-
-	// for _, id := range identified {
-	// 	fmt.Println(id)
-	// }
 }
 
 func isMeet(nNode *node) float64 {
