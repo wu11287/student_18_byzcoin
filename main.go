@@ -13,17 +13,16 @@ import (
 const denominator float64 = 18446744073709551615
 
 type node struct {
-	id     		int
-	weight 		int
-	pk     		crypto.VrfPubkey
-	sk     		crypto.VrfPrivkey
-	rnd    		crypto.VrfOutput
-	proof  		crypto.VrfProof
-	pkList 		[4]crypto.VrfPubkey
-	proofList 	[4]crypto.VrfProof
-	idList 		[]int
+	id        int
+	weight    int
+	pk        crypto.VrfPubkey
+	sk        crypto.VrfPrivkey
+	rnd       crypto.VrfOutput
+	proof     crypto.VrfProof
+	pkList    [4]crypto.VrfPubkey
+	proofList [4]crypto.VrfProof
+	idList    []int
 }
-
 
 type pkAndId struct {
 	id int
@@ -31,17 +30,16 @@ type pkAndId struct {
 }
 
 type ProofAndId struct {
-	id int
+	id    int
 	proof crypto.VrfProof
 }
 
 type RndAndId struct {
-	id int
+	id  int
 	rnd crypto.VrfOutput
-	p float64
-	in bool
+	p   float64
+	in  bool
 }
-
 
 //生成长度为 n 的随机byte数组
 func GenerateRandomBytes(n int) ([]byte, error) {
@@ -54,7 +52,11 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 	return b, nil
 }
 
-func Sotition(nNode *node, msg []byte) {
+func Sotition(nNode *node, msg []byte, deferFunc func()) {
+	defer func() {
+		deferFunc()
+	}()
+
 	proof, ok1 := nNode.sk.ProveMy(msg)
 	if !ok1 {
 		fmt.Println("generate proof error!")
@@ -76,10 +78,13 @@ func newNode(nNode *node, i int) {
 }
 
 //每个节点把自己的公钥、id 写到管道
-func broadcastPK(ch []chan *pkAndId, nNode *node, id int, deferFunc func()) {
+func broadcastPK(ch []chan *pkAndId, nNode *node, id int, wg *sync.WaitGroup) {
+
+	// defer
 	defer func() {
-		deferFunc()
+		wg.Done()
 	}()
+
 	tmp := &pkAndId{id, nNode.pk}
 	ch[0] <- tmp
 	ch[1] <- tmp
@@ -89,7 +94,7 @@ func broadcastPK(ch []chan *pkAndId, nNode *node, id int, deferFunc func()) {
 
 // 广播特定节点的proof
 func broadcastProof(ch []chan *ProofAndId, nNode *node, id int, deferFunc func()) {
-	defer func(){
+	defer func() {
 		deferFunc()
 	}()
 	tmp := &ProofAndId{id, nNode.proof}
@@ -100,7 +105,7 @@ func broadcastProof(ch []chan *ProofAndId, nNode *node, id int, deferFunc func()
 }
 
 func broadcastRnd(ch []chan *RndAndId, nNode *node, id int, deferFunc func()) {
-	defer func(){
+	defer func() {
 		deferFunc()
 	}()
 	p := isMeet(nNode)
@@ -113,7 +118,7 @@ func broadcastRnd(ch []chan *RndAndId, nNode *node, id int, deferFunc func()) {
 		isin = true
 	}
 	tmp := &RndAndId{id, nNode.rnd, p, isin}
-	
+
 	ch[0] <- tmp
 	ch[1] <- tmp
 	ch[2] <- tmp
@@ -121,62 +126,57 @@ func broadcastRnd(ch []chan *RndAndId, nNode *node, id int, deferFunc func()) {
 }
 
 //持久化公钥到节点struct
-func storePk(ch chan *pkAndId, nNode *[4]node, id int, deferFunc func()) {
-	defer func(){
-		deferFunc()
-	}()
-	for {
-		tmp := <- ch
+func storePk(ch chan *pkAndId, nNode *[4]node, id int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	for i := 0; i < 4; i++ {
+		tmp := <-ch
 		nNode[id].pkList[tmp.id] = tmp.pk
 	}
 }
 
 func storeProof(ch chan *ProofAndId, nNode *[4]node, id int, deferFunc func()) {
-	defer func(){
+	defer func() {
 		deferFunc()
 	}()
 
-	for {
-		tmp := <- ch
+	for i := 0; i < 4; i++ {
+		tmp := <-ch
 		nNode[id].proofList[tmp.id] = tmp.proof
 	}
 }
 
-
-func storeRnd(ch chan *RndAndId, nNode *[4]node, id int, deferFunc func(), randomness []byte) {
-	defer func(){
+func storeRnd(ch chan *RndAndId, nNode *[4]node, id int, randomness []byte, deferFunc func()) {
+	//TODO wg 传递
+	defer func() {
 		deferFunc()
 	}()
 
-	for i:=0; i < 4; i++ {
-		tmp := <- ch
+	for i := 0; i < 4; i++ {
+		tmp := <-ch
 		// 如果满足条件，就验证后加入idlist
 		if tmp.in {
-			go verifyRnd(nNode[id].pkList[tmp.id], nNode[id].proofList[tmp.id], tmp.rnd, randomness, id, nNode, tmp.id)
+			ok := verifyRnd(nNode[id].pkList[tmp.id], nNode[id].proofList[tmp.id], tmp.rnd, randomness, id)
+			if ok {
+				nNode[id].idList = append(nNode[id].idList, tmp.id)
+			}
 		}
 	}
 }
 
-// 验证rnd是否正确，判断节点是否说谎
-func verifyRnd(pk crypto.VrfPubkey, proof crypto.VrfProof, output crypto.VrfOutput,  msg []byte, id int, nNode *[4]node, tmpId int) {
-	var mutex sync.Mutex
-	mutex.Lock()
-	defer mutex.Unlock()
+func verifyRnd(pk crypto.VrfPubkey, proof crypto.VrfProof, output crypto.VrfOutput, msg []byte, id int) bool {
 	ok, output2 := pk.VerifyMy(proof, msg)
+
 	if !ok {
 		fmt.Println("verified error")
-		return
+		return false
 	}
-	if output == output2 {
-		nNode[id].idList = append(nNode[id].idList, tmpId)
-	}
+	return output == output2
 }
-
 
 func main() {
 	var wg sync.WaitGroup
-	// chsPK := make([]chan crypto.VrfPubkey, 4) //四个节点的管道切片,管道传送公钥
-	chsPK := make([]chan *pkAndId, 4) 
+	chsPK := make([]chan *pkAndId, 4)
 	chsProof := make([]chan *ProofAndId, 4)
 	chsRnd := make([]chan *RndAndId, 4)
 	nodes := [4]node{}
@@ -191,33 +191,29 @@ func main() {
 		chsPK[i] = make(chan *pkAndId)
 		chsProof[i] = make(chan *ProofAndId)
 		chsRnd[i] = make(chan *RndAndId)
-		wg.Add(1)
-		go newNode(&nodes[i], i)
+		newNode(&nodes[i], i)
 	}
 
 	time.Sleep(time.Second * 1)
 
-	// 广播公钥
 	for i := 0; i < 4; i++ {
 		wg.Add(1)
-		go broadcastPK(chsPK, &nodes[i], i, wg.Done)
+		go broadcastPK(chsPK, &nodes[i], i, &wg)
 	}
 
 	for i := 0; i < 4; i++ {
 		wg.Add(1)
-		go storePk(chsPK[i], &nodes, i, wg.Done)
+		go storePk(chsPK[i], &nodes, i, &wg)
 	}
-	
-	time.Sleep(time.Second * 1) //使得程序运行到此的时候已经广播公钥完毕
 
-	//加密抽签
+	time.Sleep(time.Second * 1)
+
 	for i := 0; i < 4; i++ {
 		wg.Add(1)
-		go Sotition(&nodes[i], randomness)
+		go Sotition(&nodes[i], randomness, wg.Done)
 	}
 
 	//实际上会在加密抽签后，先判断自己是不是被选中，被选中就打包区块。并将rnd和proof随着区块一起广播
-	//广播Proof、rnd
 	for i := 0; i < 4; i++ {
 		proof, ok1 := nodes[i].sk.ProveMy(randomness)
 		if !ok1 {
@@ -234,7 +230,7 @@ func main() {
 		go broadcastRnd(chsRnd, &nodes[i], i, wg.Done)
 	}
 
-
+	
 	for i := 0; i < 4; i++ {
 		wg.Add(1)
 		go storeProof(chsProof[i], &nodes, i, wg.Done)
@@ -242,16 +238,18 @@ func main() {
 
 	for i := 0; i < 4; i++ {
 		wg.Add(1)
-		go storeRnd(chsRnd[i], &nodes, i, wg.Done, randomness)
+		go storeRnd(chsRnd[i], &nodes, i, randomness, wg.Done)
 	}
-	fmt.Println("now")
-
-	for _, v := range nodes[0].idList {
-		fmt.Println(v)
-	}
-
-
 	wg.Wait()
+
+	for i := 0; i < 4; i++ {
+		fmt.Printf("node[%v] ", i)
+		for _, v := range nodes[i].idList {
+			fmt.Printf(" %v ", v)
+		}
+		fmt.Println()
+	}
+
 }
 
 func isMeet(nNode *node) float64 {
@@ -259,11 +257,11 @@ func isMeet(nNode *node) float64 {
 	var x int64
 	binary.Read(bytesBuffer, binary.BigEndian, &x)
 
-  	rnd := float64(x)
+	rnd := float64(x)
 	if rnd < 0 {
 		rnd += denominator
 	}
 
-	p := rnd/denominator
+	p := rnd / denominator
 	return p
 }
