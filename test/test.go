@@ -1,17 +1,19 @@
 package main
 
 import (
-	"bytes"
-	"encoding/binary"
+	// "bytes"
+	// "encoding/binary"
 	"fmt"
 	crypto "myProject/crypto" //注意要写绝对路径，从gopath开始
+	"time"
 )
 
-const denominator float64 = 18446744073709551615
+// const denominator float64 = 18446744073709551615
 
-func main() {
+func main()  {
+	sotition()
 	//1. 生成公私钥
-	pk, sk := crypto.VrfKeygen()
+	// pk, sk := crypto.VrfKeygen()
 	// fmt.Println(pk)
 	// fmt.Println(sk)
 
@@ -20,43 +22,67 @@ func main() {
 	// if pk == pk2 {
 	// 	fmt.Println("veritfy success")
 	// }
+	// var success bool = false
+
+	// msg := ([]byte)("hello")
+	// proof, ok1 := sk.ProveMy(msg)
+	// if !ok1 {
+	// 	fmt.Println("proof generated error")
+	// }
+	// // fmt.Println("proof = ", proof)
+
+	// output, ok2 := proof.Hash()
+	// if !ok2 {
+	// 	fmt.Println("output generated error")
+	// }
+	// // fmt.Println("output = ", output)
+	// ok3, output2 := pk.VerifyMy(proof, msg)
+	// if !ok3 {
+	// 	fmt.Println("verifyMy error")
+	// }
+	// if output == output2 {
+	// 	success = true
+	// 	fmt.Println("verify success")
+	// }
+
+	// return success
+
+	// //output转换成[]byte类型
+	// bytesBuffer := bytes.NewBuffer(output[:])
+
+	// //[64]byte 
+	// var x int64
+  	// binary.Read(bytesBuffer, binary.BigEndian, &x)
+
+  	// rnd := float64(x)
+	// if rnd < 0 {
+	// 	rnd += denominator
+	// }
+	
+	// p := rnd/denominator //表示概率
+	// if p < 0.7 { //允许进入系统
+	// 	return
+	// }
+}
+
+func sotition() {
+	// var success bool = false
+	_, sk := crypto.VrfKeygen()
 
 	msg := ([]byte)("hello")
-	proof, ok1 := sk.ProveMy(msg)
-	if !ok1 {
+	proof, ok := sk.ProveMy(msg) //多次调用仍然会得到相同的输出
+
+	if !ok {
 		fmt.Println("proof generated error")
 	}
-	fmt.Println("proof = ", proof)
-
-	output, ok2 := proof.Hash()
-	if !ok2 {
+	output1, ok := proof.Hash()
+	time.Sleep(time.Second * 3)
+	output2, ok := proof.Hash()
+	if !ok {
 		fmt.Println("output generated error")
 	}
-	fmt.Println("output = ", output)
-	ok3, output2 := pk.VerifyMy(proof, msg)
-	if !ok3 {
-		fmt.Println("verifyMy error")
-	}
-	if output == output2 {
-		fmt.Println("verify success")
-	}
-
-	//output转换成[]byte类型
-	bytesBuffer := bytes.NewBuffer(output[:])
-
-	//[64]byte 
-	var x int64
-  	binary.Read(bytesBuffer, binary.BigEndian, &x)
-
-  	rnd := float64(x)
-	if rnd < 0 {
-		rnd += denominator
-	}
-	
-	p := rnd/denominator //表示概率
-	if p < 0.7 { //允许进入系统
-		return
-	}
+	fmt.Printf("output1 = %v\n", output1)
+	fmt.Printf("output2 = %v\n", output2)
 }
 
 /*

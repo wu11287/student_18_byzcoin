@@ -1,4 +1,5 @@
-package main
+package testmi
+// package main
 
 import (
 	"bytes"
@@ -11,6 +12,8 @@ import (
 )
 
 const denominator float64 = 18446744073709551615
+
+var lock sync.Mutex
 
 type node struct {
 	id        int
@@ -52,77 +55,106 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 	return b, nil
 }
 
-func Sotition(nNode *node, msg []byte, deferFunc func()) {
-	defer func() {
-		deferFunc()
-	}()
+func Sotition(nNode *node, msg []byte, wg *sync.WaitGroup) {
+	defer wg.Done()
 
-	proof, ok1 := nNode.sk.ProveMy(msg)
-	if !ok1 {
+	lock.Lock()
+	proof, ok := nNode.sk.ProveMy(msg)
+	if !ok {
 		fmt.Println("generate proof error!")
 	}
 
-	rnd, ok2 := proof.Hash()
-	if !ok2 {
+	rnd, ok := proof.Hash()
+	if !ok {
 		fmt.Println("generate rnd error!")
 	}
 	nNode.rnd = rnd
 	nNode.proof = proof
+	lock.Unlock()
 }
 
 func newNode(nNode *node, i int) {
 	nNode.id = i
-	nNode.weight = i
+	nNode.weight = i+1
 	nNode.pk, nNode.sk = crypto.VrfKeygen()
-	// fmt.Println("newNode", i, nNode.pk, nNode.sk)
 }
 
-//每个节点把自己的公钥、id 写到管道
 func broadcastPK(ch []chan *pkAndId, nNode *node, id int, wg *sync.WaitGroup) {
+	defer wg.Done()
 
-	// defer
-	defer func() {
-		wg.Done()
-	}()
+	lock.Lock()
 
 	tmp := &pkAndId{id, nNode.pk}
-	ch[0] <- tmp
-	ch[1] <- tmp
-	ch[2] <- tmp
-	ch[3] <- tmp
+	go func() {
+		for i:=0; i< 4; i++ {
+			ch[i] <- tmp
+		}
+	}()
+
+	lock.Unlock()
 }
 
 // 广播特定节点的proof
-func broadcastProof(ch []chan *ProofAndId, nNode *node, id int, deferFunc func()) {
-	defer func() {
-		deferFunc()
-	}()
+func broadcastProof(ch []chan *ProofAndId, nNode *node, id int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	lock.Lock()
 	tmp := &ProofAndId{id, nNode.proof}
-	ch[0] <- tmp
-	ch[1] <- tmp
-	ch[2] <- tmp
-	ch[3] <- tmp
+
+	go func() {
+		for i:=0; i < 4; i++ {
+			ch[i] <- tmp
+		}
+	}()
+
+	lock.Unlock()
 }
 
-func broadcastRnd(ch []chan *RndAndId, nNode *node, id int, deferFunc func()) {
-	defer func() {
-		deferFunc()
-	}()
-	p := isMeet(nNode)
-	fmt.Printf("broadcastRnd id = %d, p = %f", id, p)
-	fmt.Println()
+func broadcastRnd(ch []chan *RndAndId, nNode *node, id int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	lock.Lock()
+	var p float64
+	for i := 0; i < nNode.weight; i++ {
+		p = isMeet(nNode)
+		if p > 0.7 {
+			continue
+		} else {
+			break;
+		}
+	}
+	// p := isMeet(nNode)
 	var isin bool
+
 	if p > 0.7 {
 		isin = false
 	} else {
 		isin = true
 	}
+
 	tmp := &RndAndId{id, nNode.rnd, p, isin}
 
-	ch[0] <- tmp
-	ch[1] <- tmp
-	ch[2] <- tmp
-	ch[3] <- tmp
+	go func() {
+		for i:=0; i < 4; i++ {
+			ch[i] <- tmp
+		}
+	}()
+
+	lock.Unlock()
+}
+
+func isMeet(nNode *node) float64 {
+	bytesBuffer := bytes.NewBuffer(nNode.rnd[:])
+	var x int64
+	binary.Read(bytesBuffer, binary.BigEndian, &x)
+
+	rnd := float64(x)
+	if rnd < 0 {
+		rnd += denominator
+	}
+
+	p := rnd / denominator
+	return p
 }
 
 //持久化公钥到节点struct
@@ -135,26 +167,20 @@ func storePk(ch chan *pkAndId, nNode *[4]node, id int, wg *sync.WaitGroup) {
 	}
 }
 
-func storeProof(ch chan *ProofAndId, nNode *[4]node, id int, deferFunc func()) {
-	defer func() {
-		deferFunc()
-	}()
+func storeProof(ch chan *ProofAndId, nNode *[4]node, id int, wg *sync.WaitGroup) {
+	defer wg.Done()
 
-	for i := 0; i < 4; i++ {
+	for i :=0; i < 4; i++ {
 		tmp := <-ch
 		nNode[id].proofList[tmp.id] = tmp.proof
 	}
 }
 
-func storeRnd(ch chan *RndAndId, nNode *[4]node, id int, randomness []byte, deferFunc func()) {
-	//TODO wg 传递
-	defer func() {
-		deferFunc()
-	}()
+func storeRnd(ch chan *RndAndId, nNode *[4]node, id int, randomness []byte, wg *sync.WaitGroup) {
+	defer wg.Done()
 
 	for i := 0; i < 4; i++ {
 		tmp := <-ch
-		// 如果满足条件，就验证后加入idlist
 		if tmp.in {
 			ok := verifyRnd(nNode[id].pkList[tmp.id], nNode[id].proofList[tmp.id], tmp.rnd, randomness, id)
 			if ok {
@@ -174,19 +200,20 @@ func verifyRnd(pk crypto.VrfPubkey, proof crypto.VrfProof, output crypto.VrfOutp
 	return output == output2
 }
 
-func main() {
+func count() bool {
+// func main() {
 	var wg sync.WaitGroup
 	chsPK := make([]chan *pkAndId, 4)
 	chsProof := make([]chan *ProofAndId, 4)
 	chsRnd := make([]chan *RndAndId, 4)
 	nodes := [4]node{}
+
 	rand.Seed(time.Now().Unix())
 	randomness, err := GenerateRandomBytes(10)
-
 	if err != nil {
 		fmt.Println("generate random byte[] failed!")
 	}
-	//生成所有节点的公私钥
+
 	for i := 0; i < 4; i++ {
 		chsPK[i] = make(chan *pkAndId)
 		chsProof[i] = make(chan *ProofAndId)
@@ -194,74 +221,49 @@ func main() {
 		newNode(&nodes[i], i)
 	}
 
-	time.Sleep(time.Second * 1)
-
 	for i := 0; i < 4; i++ {
-		wg.Add(1)
+		wg.Add(2)
 		go broadcastPK(chsPK, &nodes[i], i, &wg)
-	}
-
-	for i := 0; i < 4; i++ {
-		wg.Add(1)
 		go storePk(chsPK[i], &nodes, i, &wg)
 	}
 
-	time.Sleep(time.Second * 1)
-
-	for i := 0; i < 4; i++ {
-		wg.Add(1)
-		go Sotition(&nodes[i], randomness, wg.Done)
-	}
-
-	//实际上会在加密抽签后，先判断自己是不是被选中，被选中就打包区块。并将rnd和proof随着区块一起广播
-	for i := 0; i < 4; i++ {
-		proof, ok1 := nodes[i].sk.ProveMy(randomness)
-		if !ok1 {
-			fmt.Println("proof generated error")
-		}
-		rnd, ok2 := proof.Hash()
-		if !ok2 {
-			fmt.Println("output generated error")
-		}
-		nodes[i].proof = proof
-		nodes[i].rnd = rnd
-		wg.Add(2)
-		go broadcastProof(chsProof, &nodes[i], i, wg.Done)
-		go broadcastRnd(chsRnd, &nodes[i], i, wg.Done)
-	}
-
-	
-	for i := 0; i < 4; i++ {
-		wg.Add(1)
-		go storeProof(chsProof[i], &nodes, i, wg.Done)
-	}
-
-	for i := 0; i < 4; i++ {
-		wg.Add(1)
-		go storeRnd(chsRnd[i], &nodes, i, randomness, wg.Done)
-	}
 	wg.Wait()
 
 	for i := 0; i < 4; i++ {
-		fmt.Printf("node[%v] ", i)
-		for _, v := range nodes[i].idList {
-			fmt.Printf(" %v ", v)
+		wg.Add(1)
+		go Sotition(&nodes[i], randomness, &wg)
+	}
+
+	wg.Wait()
+
+	for i := 0; i < 4; i++ {
+		wg.Add(2)
+		go broadcastProof(chsProof, &nodes[i], i, &wg)
+		go storeProof(chsProof[i], &nodes, i, &wg)
+	}
+	wg.Wait()
+
+
+	for i := 0; i < 4; i++ {
+		wg.Add(2)
+		go broadcastRnd(chsRnd, &nodes[i], i, &wg)
+		go storeRnd(chsRnd[i], &nodes, i, randomness, &wg)
+	}
+
+	var istrue bool
+	size := len(nodes[0].idList)
+	var cnt int = 1
+	for i := 1; i < 4; i++ {
+		tmp := len(nodes[i].idList)
+		if tmp == size {
+			cnt++
+		} else {
+			break
 		}
-		fmt.Println()
 	}
-
-}
-
-func isMeet(nNode *node) float64 {
-	bytesBuffer := bytes.NewBuffer(nNode.rnd[:])
-	var x int64
-	binary.Read(bytesBuffer, binary.BigEndian, &x)
-
-	rnd := float64(x)
-	if rnd < 0 {
-		rnd += denominator
+	if cnt == 4 {
+		istrue = true
 	}
-
-	p := rnd / denominator
-	return p
+	// fmt.Println(istrue)
+	return istrue
 }
