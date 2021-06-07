@@ -13,5 +13,5 @@ func BenchmarkMain(b *testing.B) {
 			cnt++
 		}
 	}
-	fmt.Println(cnt)
+	fmt.Printf("cnt = %v\n",cnt)
 }

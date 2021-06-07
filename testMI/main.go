@@ -15,6 +15,8 @@ const denominator float64 = 18446744073709551615
 
 var lock sync.Mutex
 
+const n int = 10//表示全网节点数目
+
 type node struct {
 	id        int
 	weight    int
@@ -22,8 +24,8 @@ type node struct {
 	sk        crypto.VrfPrivkey
 	rnd       crypto.VrfOutput
 	proof     crypto.VrfProof
-	pkList    [4]crypto.VrfPubkey
-	proofList [4]crypto.VrfProof
+	pkList    [n]crypto.VrfPubkey
+	proofList [n]crypto.VrfProof
 	idList    []int
 }
 
@@ -86,7 +88,7 @@ func broadcastPK(ch []chan *pkAndId, nNode *node, id int, wg *sync.WaitGroup) {
 
 	tmp := &pkAndId{id, nNode.pk}
 	go func() {
-		for i:=0; i< 4; i++ {
+		for i:=0; i< n; i++ {
 			ch[i] <- tmp
 		}
 	}()
@@ -94,7 +96,6 @@ func broadcastPK(ch []chan *pkAndId, nNode *node, id int, wg *sync.WaitGroup) {
 	lock.Unlock()
 }
 
-// 广播特定节点的proof
 func broadcastProof(ch []chan *ProofAndId, nNode *node, id int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -102,7 +103,7 @@ func broadcastProof(ch []chan *ProofAndId, nNode *node, id int, wg *sync.WaitGro
 	tmp := &ProofAndId{id, nNode.proof}
 
 	go func() {
-		for i:=0; i < 4; i++ {
+		for i:=0; i < n; i++ {
 			ch[i] <- tmp
 		}
 	}()
@@ -123,7 +124,6 @@ func broadcastRnd(ch []chan *RndAndId, nNode *node, id int, wg *sync.WaitGroup) 
 			break;
 		}
 	}
-	// p := isMeet(nNode)
 	var isin bool
 
 	if p > 0.7 {
@@ -135,7 +135,7 @@ func broadcastRnd(ch []chan *RndAndId, nNode *node, id int, wg *sync.WaitGroup) 
 	tmp := &RndAndId{id, nNode.rnd, p, isin}
 
 	go func() {
-		for i:=0; i < 4; i++ {
+		for i:=0; i < n; i++ {
 			ch[i] <- tmp
 		}
 	}()
@@ -157,29 +157,28 @@ func isMeet(nNode *node) float64 {
 	return p
 }
 
-//持久化公钥到节点struct
-func storePk(ch chan *pkAndId, nNode *[4]node, id int, wg *sync.WaitGroup) {
+func storePk(ch chan *pkAndId, nNode *[n]node, id int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	for i := 0; i < 4; i++ {
+	for i := 0; i < n; i++ {
 		tmp := <-ch
 		nNode[id].pkList[tmp.id] = tmp.pk
 	}
 }
 
-func storeProof(ch chan *ProofAndId, nNode *[4]node, id int, wg *sync.WaitGroup) {
+func storeProof(ch chan *ProofAndId, nNode *[n]node, id int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	for i :=0; i < 4; i++ {
+	for i := 0; i < n; i++ {
 		tmp := <-ch
 		nNode[id].proofList[tmp.id] = tmp.proof
 	}
 }
 
-func storeRnd(ch chan *RndAndId, nNode *[4]node, id int, randomness []byte, wg *sync.WaitGroup) {
+func storeRnd(ch chan *RndAndId, nNode *[n]node, id int, randomness []byte, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	for i := 0; i < 4; i++ {
+	for i := 0; i < n; i++ {
 		tmp := <-ch
 		if tmp.in {
 			ok := verifyRnd(nNode[id].pkList[tmp.id], nNode[id].proofList[tmp.id], tmp.rnd, randomness, id)
@@ -203,10 +202,10 @@ func verifyRnd(pk crypto.VrfPubkey, proof crypto.VrfProof, output crypto.VrfOutp
 func count() bool {
 // func main() {
 	var wg sync.WaitGroup
-	chsPK := make([]chan *pkAndId, 4)
-	chsProof := make([]chan *ProofAndId, 4)
-	chsRnd := make([]chan *RndAndId, 4)
-	nodes := [4]node{}
+	chsPK := make([]chan *pkAndId, n)
+	chsProof := make([]chan *ProofAndId, n)
+	chsRnd := make([]chan *RndAndId, n)
+	nodes := [n]node{}
 
 	rand.Seed(time.Now().Unix())
 	randomness, err := GenerateRandomBytes(10)
@@ -214,29 +213,28 @@ func count() bool {
 		fmt.Println("generate random byte[] failed!")
 	}
 
-	for i := 0; i < 4; i++ {
+	for i := 0; i < n; i++ {
 		chsPK[i] = make(chan *pkAndId)
 		chsProof[i] = make(chan *ProofAndId)
 		chsRnd[i] = make(chan *RndAndId)
 		newNode(&nodes[i], i)
 	}
 
-	for i := 0; i < 4; i++ {
+	for i := 0; i < n; i++ {
 		wg.Add(2)
-		go broadcastPK(chsPK, &nodes[i], i, &wg)
+		go broadcastPK(chsPK, &nodes[i], i, &wg) 
 		go storePk(chsPK[i], &nodes, i, &wg)
 	}
 
-	wg.Wait()
-
-	for i := 0; i < 4; i++ {
+	
+	for i := 0; i < n; i++ {
 		wg.Add(1)
 		go Sotition(&nodes[i], randomness, &wg)
 	}
 
 	wg.Wait()
 
-	for i := 0; i < 4; i++ {
+	for i := 0; i < n; i++ {
 		wg.Add(2)
 		go broadcastProof(chsProof, &nodes[i], i, &wg)
 		go storeProof(chsProof[i], &nodes, i, &wg)
@@ -244,7 +242,7 @@ func count() bool {
 	wg.Wait()
 
 
-	for i := 0; i < 4; i++ {
+	for i := 0; i < n; i++ {
 		wg.Add(2)
 		go broadcastRnd(chsRnd, &nodes[i], i, &wg)
 		go storeRnd(chsRnd[i], &nodes, i, randomness, &wg)
@@ -253,7 +251,7 @@ func count() bool {
 	var istrue bool
 	size := len(nodes[0].idList)
 	var cnt int = 1
-	for i := 1; i < 4; i++ {
+	for i := 1; i < n; i++ {
 		tmp := len(nodes[i].idList)
 		if tmp == size {
 			cnt++
@@ -261,7 +259,7 @@ func count() bool {
 			break
 		}
 	}
-	if cnt == 4 {
+	if cnt == n {
 		istrue = true
 	}
 	// fmt.Println(istrue)
