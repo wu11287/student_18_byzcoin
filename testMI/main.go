@@ -1,5 +1,5 @@
-package testmi
-// package main
+// package testmi
+package main
 
 import (
 	"bytes"
@@ -15,7 +15,8 @@ const denominator float64 = 18446744073709551615
 
 var lock sync.Mutex
 
-const n int = 10//表示全网节点数目
+const n int = 100 //表示全网节点数目
+const m int = 2 //表示分片的个数
 
 type node struct {
 	id        int
@@ -27,6 +28,8 @@ type node struct {
 	pkList    [n]crypto.VrfPubkey
 	proofList [n]crypto.VrfProof
 	idList    []int
+	shardIdx  int
+	shardInNode []int
 }
 
 type pkAndId struct {
@@ -77,7 +80,8 @@ func Sotition(nNode *node, msg []byte, wg *sync.WaitGroup) {
 
 func newNode(nNode *node, i int) {
 	nNode.id = i
-	nNode.weight = i+1
+	// TODO 初始权重设定 
+	nNode.weight = rand.Intn(3)+1 //[1,3]
 	nNode.pk, nNode.sk = crypto.VrfKeygen()
 }
 
@@ -199,8 +203,20 @@ func verifyRnd(pk crypto.VrfPubkey, proof crypto.VrfProof, output crypto.VrfOutp
 	return output == output2
 }
 
-func count() bool {
-// func main() {
+
+func Doshard(nNode *node, idx int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	mod := idx % m 
+	for _, v := range nNode.idList {
+		if v % m == mod {
+			nNode.shardInNode = append(nNode.shardInNode, v)
+		}
+	}
+}
+
+// func count() bool {
+func main() {
 	var wg sync.WaitGroup
 	chsPK := make([]chan *pkAndId, n)
 	chsProof := make([]chan *ProofAndId, n)
@@ -226,13 +242,15 @@ func count() bool {
 		go storePk(chsPK[i], &nodes, i, &wg)
 	}
 
-	
+	wg.Wait()
+
 	for i := 0; i < n; i++ {
 		wg.Add(1)
 		go Sotition(&nodes[i], randomness, &wg)
 	}
 
 	wg.Wait()
+
 
 	for i := 0; i < n; i++ {
 		wg.Add(2)
@@ -247,9 +265,14 @@ func count() bool {
 		go broadcastRnd(chsRnd, &nodes[i], i, &wg)
 		go storeRnd(chsRnd[i], &nodes, i, randomness, &wg)
 	}
+	wg.Wait()
 
 	var istrue bool
 	size := len(nodes[0].idList)
+	fmt.Println(size)
+	fmt.Println(nodes[1].idList)
+	fmt.Println(nodes[2].idList)
+	fmt.Println(nodes[3].idList)
 	var cnt int = 1
 	for i := 1; i < n; i++ {
 		tmp := len(nodes[i].idList)
@@ -262,6 +285,20 @@ func count() bool {
 	if cnt == n {
 		istrue = true
 	}
-	// fmt.Println(istrue)
-	return istrue
+	fmt.Println(istrue)
+
+	if size < 4 {
+		fmt.Println("the number is not enough, system cannot start!")
+	}
+
+	for _, v := range nodes[0].idList {
+		wg.Add(1)
+		go Doshard(&nodes[v], v, &wg)
+	}
+	wg.Wait()
+
+	fmt.Println(nodes[0].shardInNode)
+	fmt.Println(nodes[1].shardInNode)
+
+	// return istrue
 }
