@@ -6,12 +6,11 @@ import (
 )
 
 func BenchmarkMain(b *testing.B) {
-	var cnt int = 0
-	for i:=0;i<b.N;i++{
-		ok := count()
-		if !ok {
-			cnt++
+	for i := 0; i < b.N; i++{
+		var end float64
+		for j := 0; j < 3; j++ {
+			end += count()
 		}
+		fmt.Println(end/3.0)
 	}
-	fmt.Printf("cnt = %v\n",cnt)
 }

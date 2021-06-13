@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
-	// "os/exec"
+	"os/exec"
 )
 
 const MAXINT64 int64 = math.MaxInt64
@@ -162,21 +162,21 @@ func main() {
 
 	start := time.Now()
 
-	// // 得到cpu使用率
-	// command := `../shells/collect_cpu.sh`
-	// cmd := exec.Command("/bin/bash", command)
-	// err = cmd.Run()
-	// if err != nil {
-	// 	panic(err)
-	// }
+	// 得到cpu使用率
+	command := `../shells/collect_cpu.sh`
+	cmd := exec.Command("/bin/bash", command)
+	err = cmd.Run()
+	if err != nil {
+		panic(err)
+	}
 
-	// // 得到系统负载
-	// command = `../shells/collect_load.sh`
-	// cmd = exec.Command("/bin/bash", command)
-	// err = cmd.Run()
-	// if err != nil {
-	// 	panic(err)
-	// }
+	// 得到系统负载
+	command = `../shells/collect_load.sh`
+	cmd = exec.Command("/bin/bash", command)
+	err = cmd.Run()
+	if err != nil {
+		panic(err)
+	}
 
 	for i := 0; i < n; i++ {
 		wg.Add(1)

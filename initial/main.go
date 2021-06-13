@@ -1,15 +1,14 @@
-// package testmi
+// package initial
 package main
 
 import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-
-	// "io"
 	"math/rand"
 	crypto "myProject/crypto"
 	"os"
+	// "os/exec"
 	"sync"
 	"time"
 )
@@ -18,7 +17,7 @@ const denominator float64 = 18446744073709551615
 
 var lock sync.Mutex
 
-const n int = 50 //表示全网节点数目
+const n int = 100 //表示全网节点数目
 const m int = 2 //表示分片的个数
 
 type node struct {
@@ -31,7 +30,6 @@ type node struct {
 	pkList    [n]crypto.VrfPubkey
 	proofList [n]crypto.VrfProof
 	idList    []int
-	shardIdx  int
 	shardInNode []int
 }
 
@@ -218,7 +216,7 @@ func Doshard(nNode *node, idx int, wg *sync.WaitGroup) {
 	}
 }
 
-// func count() bool {
+// func count() float64 {
 func main() {
 	var wg sync.WaitGroup
 	chsPK := make([]chan *pkAndId, n)
@@ -248,6 +246,21 @@ func main() {
 	wg.Wait()
 
 	start := time.Now()
+	// 得到cpu使用率
+	// command := `../shells/collect_cpu.sh`
+	// cmd := exec.Command("/bin/bash", command)
+	// err = cmd.Run()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// // 得到系统负载
+	// command = `../shells/collect_load.sh`
+	// cmd = exec.Command("/bin/bash", command)
+	// err = cmd.Run()
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	for i := 0; i < n; i++ {
 		wg.Add(1)
@@ -272,42 +285,13 @@ func main() {
 	}
 	wg.Wait()
 
-	var istrue bool
-	size := len(nodes[0].idList)
-	// fmt.Println(size)
-	
-	var cnt int = 1
-	for i := 1; i < n; i++ {
-		tmp := len(nodes[i].idList)
-		if tmp == size {
-			cnt++
-		} else {
-			break
-		}
-	}
-	if cnt == n {
-		istrue = true
-	}
-	fmt.Println(istrue) //每个节点都拥有相同的idList，包括未成功加入的节点 
-
-	if size < 4 {
-		fmt.Println("the number is not enough, system cannot start!")
-	}
-
 	for _, v := range nodes[0].idList {
 		wg.Add(1)
 		go Doshard(&nodes[v], v, &wg)
 	}
 	wg.Wait()
 
-	// 确保分片内部的节点数目 > 4
-	for _, v := range nodes[0].idList {
-		if len(nodes[v].shardInNode) < 4 {
-			fmt.Printf("The shard have not enough nodes!\n")
-			return
-		} 
-	}
-	
+
 	for i := 0; i < m; i++ { //分片个数
 		filename := fmt.Sprintf("shard%v.txt", i)
 		f, err := os.Create(filename) 
@@ -330,6 +314,10 @@ func main() {
 		}
 	}
 
-	interval := time.Now().Sub(start) 
+	interval := time.Since(start) 
 	fmt.Printf("time consumed: %v\n", interval)
+	// return interval.Seconds()
 }
+
+
+// cpu使用率 + 负载
