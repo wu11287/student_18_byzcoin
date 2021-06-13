@@ -1,4 +1,5 @@
 package main
+// package pow
 
 import (
 	// "hash"
@@ -11,22 +12,56 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	// "os/exec"
 )
 
 const MAXINT64 int64 = math.MaxInt64
-const m int = 2
-const n int = 50
+const n int = 100
+const s int = 1
+
+var m int = int(math.Pow(2, float64(s)))
+var lock sync.Mutex
 
 type node struct {
-	id        int
-	pk        crypto.VrfPubkey
-	sk        crypto.VrfPrivkey
-	hashRes	  string
+	id      int
+	pk      crypto.VrfPubkey
+	sk      crypto.VrfPrivkey
+	hashRes string
+	pkList  [n]crypto.VrfPubkey
+}
+
+type pkAndId struct {
+	id int
+	pk crypto.VrfPubkey
 }
 
 func newNode(nNode *node, i int) {
 	nNode.id = i
 	nNode.pk, nNode.sk = crypto.VrfKeygen()
+}
+
+func broadcastPK(ch []chan *pkAndId, nNode *node, id int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	lock.Lock()
+
+	tmp := &pkAndId{id, nNode.pk}
+	go func() {
+		for i := 0; i < n; i++ {
+			ch[i] <- tmp
+		}
+	}()
+
+	lock.Unlock()
+}
+
+func storePk(ch chan *pkAndId, nNode *[n]node, id int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	for i := 0; i < n; i++ {
+		tmp := <-ch
+		nNode[id].pkList[tmp.id] = tmp.pk
+	}
 }
 
 func GenerateRandomBytes(n int) ([]byte, error) {
@@ -38,55 +73,14 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 	return b, nil
 }
 
-func main() {
-	var wg sync.WaitGroup
-	nodes := [n]node{}
-
-	for i := 0; i < n; i++ {
-		newNode(&nodes[i], i)
-	}
-
-	randomness, err := GenerateRandomBytes(10)
-	if err != nil {
-		panic(err)
-	}
-
-	start := time.Now()
-	var ips = [n]string{}
-
-	// var ips = [500]string{}
-	// for i := 0; i < 250; i++ {
-	// 	ips[i] = "192.168.0." + strconv.Itoa(i)
-	// }
-	// for i := 0; i < 250; i++ {
-	// 	ips[i+250] = "192.168.1." + strconv.Itoa(i)
-	// }
-
-	for i:=0; i < n; i++ {
-		wg.Add(1)
-		go hashCompute(ips[i], randomness, nodes[i].pk[:], &nodes[i], &wg)
-	}
-	for i := 0; i < n; i++ {
-		ips[i] = "192.168.0." + strconv.Itoa(i)
-	}
-	wg.Wait()
-
-	for _, v := range nodes {
-		Doshard(&v, v.id)
-	}
-
-	in := time.Since(start)
-	fmt.Println("time consumed: ", in)
-}
-
 func Doshard(nNode *node, id int) {
-	tmp := nNode.hashRes[len(nNode.hashRes)-1:]
+	tmp := nNode.hashRes[len(nNode.hashRes)-s:]
 	var end int
 	for _, v := range tmp {
-		end += (int(v) - '0') 
+		end += (int(v) - '0')
 	}
 
-	sIdx := end % m 
+	sIdx := end % m
 	filename := fmt.Sprintf("shard%v.txt", sIdx)
 	var f *os.File
 	var err error
@@ -107,14 +101,13 @@ func Doshard(nNode *node, id int) {
 	}
 }
 
-
 func hashCompute(ip string, rnd []byte, pk []byte, nNode *node, wg *sync.WaitGroup) {
 	defer wg.Done()
 	var nonce int64
 
 	for nonce < MAXINT64 {
 		nNode.hashRes = HashString(ip + string(rnd) + string(pk) + strconv.FormatInt(nonce, 10))
-		if nNode.hashRes[:4] != "0000" {
+		if nNode.hashRes[:5] != "00000" {
 			nonce++
 			continue
 		} else {
@@ -122,7 +115,6 @@ func hashCompute(ip string, rnd []byte, pk []byte, nNode *node, wg *sync.WaitGro
 		}
 	}
 }
-
 
 // hash 会产生一个64位的输出字符串
 func HashString(str string) string {
@@ -136,4 +128,68 @@ func checkFileIsExist(filename string) bool {
 		return false
 	}
 	return true
+}
+
+func main() {
+// func powMain() float64 {
+	var wg sync.WaitGroup
+	nodes := [n]node{}
+	chsPK := make([]chan *pkAndId, n)
+	var ips = [n]string{}
+
+	for i := 0; i < n; i++ {
+		chsPK[i] = make(chan *pkAndId)
+		newNode(&nodes[i], i)
+	}
+
+	for i := 0; i < n; i++ {
+		ips[i] = "192.168.0." + strconv.Itoa(i)
+	}
+
+	rand.Seed(time.Now().Unix())
+	randomness, err := GenerateRandomBytes(10)
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < n; i++ {
+		wg.Add(2)
+		go broadcastPK(chsPK, &nodes[i], i, &wg)
+		go storePk(chsPK[i], &nodes, i, &wg)
+	}
+
+	wg.Wait()
+
+	start := time.Now()
+
+	// // 得到cpu使用率
+	// command := `../shells/collect_cpu.sh`
+	// cmd := exec.Command("/bin/bash", command)
+	// err = cmd.Run()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// // 得到系统负载
+	// command = `../shells/collect_load.sh`
+	// cmd = exec.Command("/bin/bash", command)
+	// err = cmd.Run()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go hashCompute(ips[i], randomness, nodes[i].pk[:], &nodes[i], &wg)
+	}
+
+	wg.Wait()
+
+	for _, v := range nodes {
+		Doshard(&v, v.id)
+	}
+
+	in := time.Since(start)
+	fmt.Println("time consumed: ", in)
+	// return in.Seconds()
 }
