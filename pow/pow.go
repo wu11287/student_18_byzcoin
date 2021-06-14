@@ -12,11 +12,12 @@ import (
 	"strconv"
 	"sync"
 	"time"
-	"os/exec"
+	// "os/exec"
+	"github.com/shirou/gopsutil/cpu"
 )
 
 const MAXINT64 int64 = math.MaxInt64
-const n int = 100
+const n int = 500
 const s int = 1
 
 var m int = int(math.Pow(2, float64(s)))
@@ -162,21 +163,22 @@ func main() {
 
 	start := time.Now()
 
-	// 得到cpu使用率
-	command := `../shells/collect_cpu.sh`
-	cmd := exec.Command("/bin/bash", command)
-	err = cmd.Run()
-	if err != nil {
-		panic(err)
-	}
+	// // 得到cpu使用率
+	// command := `../shells/collect_cpu.sh`
+	// cmd := exec.Command("/bin/bash", command)
+	// err = cmd.Run()
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	// 得到系统负载
-	command = `../shells/collect_load.sh`
-	cmd = exec.Command("/bin/bash", command)
-	err = cmd.Run()
-	if err != nil {
-		panic(err)
-	}
+	// command := `../shells/collect_load.sh`
+	// cmd := exec.Command("/bin/bash", command)
+	// err = cmd.Run()
+	// if err != nil {
+	// 	panic(err)
+	// }
+	go getCpuInfo()
 
 	for i := 0; i < n; i++ {
 		wg.Add(1)
@@ -191,5 +193,15 @@ func main() {
 
 	in := time.Since(start)
 	fmt.Println("time consumed: ", in)
+	time.Sleep(2*time.Second)
 	// return in.Seconds()
+}
+
+
+func getCpuInfo() {
+    // CPU使用率
+    for i:=0; i < 5; i++ {
+        percent, _ := cpu.Percent(time.Second, true)
+        fmt.Printf("cpu percent:%v\n", percent)
+    }
 }

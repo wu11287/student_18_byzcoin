@@ -11,13 +11,14 @@ import (
 	// "os/exec"
 	"sync"
 	"time"
+	"github.com/shirou/gopsutil/cpu"
 )
 
 const denominator float64 = 18446744073709551615
 
 var lock sync.Mutex
 
-const n int = 100 //表示全网节点数目
+const n int = 500 //表示全网节点数目
 const m int = 2 //表示分片的个数
 
 type node struct {
@@ -262,6 +263,8 @@ func main() {
 	// 	panic(err)
 	// }
 
+	go getCpuInfo()
+
 	for i := 0; i < n; i++ {
 		wg.Add(1)
 		go Sotition(&nodes[i], randomness, &wg)
@@ -316,8 +319,17 @@ func main() {
 
 	interval := time.Since(start) 
 	fmt.Printf("time consumed: %v\n", interval)
+	time.Sleep(3*time.Second)
 	// return interval.Seconds()
 }
 
 
 // cpu使用率 + 负载
+
+func getCpuInfo() {
+    // CPU使用率
+    for i:=0; i < 5; i++ {
+        percent, _ := cpu.Percent(time.Second, true)
+        fmt.Printf("cpu percent:%v\n", percent)
+    }
+}

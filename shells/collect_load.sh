@@ -1,8 +1,8 @@
 #!/bin/bash
 rm collectLoad.txt
 rm shard*
-interval=1
-cnt=20
+interval=0.1
+cnt=40
 n=0
 sum=0.0
 while [ $n -lt $cnt ]
