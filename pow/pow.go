@@ -17,7 +17,7 @@ import (
 )
 
 const MAXINT64 int64 = math.MaxInt64
-const n int = 500
+const n int = 100
 const s int = 1
 
 var m int = int(math.Pow(2, float64(s)))
@@ -108,7 +108,7 @@ func hashCompute(ip string, rnd []byte, pk []byte, nNode *node, wg *sync.WaitGro
 
 	for nonce < MAXINT64 {
 		nNode.hashRes = HashString(ip + string(rnd) + string(pk) + strconv.FormatInt(nonce, 10))
-		if nNode.hashRes[:5] != "00000" {
+		if nNode.hashRes[:3] != "000" {
 			nonce++
 			continue
 		} else {
