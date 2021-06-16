@@ -14,6 +14,7 @@ import (
 	"time"
 	// "os/exec"
 	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/load"
 )
 
 const MAXINT64 int64 = math.MaxInt64
@@ -36,9 +37,15 @@ type pkAndId struct {
 	pk crypto.VrfPubkey
 }
 
-func newNode(nNode *node, i int) {
-	nNode.id = i
-	nNode.pk, nNode.sk = crypto.VrfKeygen()
+func newNode(i int) *node {
+	// nNode.id = i
+	pk_tmp, sk_tmp := crypto.VrfKeygen()
+
+	return &node {
+		id:		i,
+		pk:		pk_tmp,
+		sk:		sk_tmp,
+	}
 }
 
 func broadcastPK(ch []chan *pkAndId, nNode *node, id int, wg *sync.WaitGroup) {
@@ -56,7 +63,7 @@ func broadcastPK(ch []chan *pkAndId, nNode *node, id int, wg *sync.WaitGroup) {
 	lock.Unlock()
 }
 
-func storePk(ch chan *pkAndId, nNode *[n]node, id int, wg *sync.WaitGroup) {
+func storePk(ch chan *pkAndId, nNode []*node, id int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for i := 0; i < n; i++ {
@@ -108,7 +115,7 @@ func hashCompute(ip string, rnd []byte, pk []byte, nNode *node, wg *sync.WaitGro
 
 	for nonce < MAXINT64 {
 		nNode.hashRes = HashString(ip + string(rnd) + string(pk) + strconv.FormatInt(nonce, 10))
-		if nNode.hashRes[:3] != "000" {
+		if nNode.hashRes[:5] != "00000" {
 			nonce++
 			continue
 		} else {
@@ -134,13 +141,14 @@ func checkFileIsExist(filename string) bool {
 func main() {
 // func powMain() float64 {
 	var wg sync.WaitGroup
-	nodes := [n]node{}
+	// nodes := [n]node{}
+	nodes := make([]*node, n)
 	chsPK := make([]chan *pkAndId, n)
 	var ips = [n]string{}
 
 	for i := 0; i < n; i++ {
 		chsPK[i] = make(chan *pkAndId)
-		newNode(&nodes[i], i)
+		nodes[i] = newNode(i)
 	}
 
 	for i := 0; i < n; i++ {
@@ -155,8 +163,8 @@ func main() {
 
 	for i := 0; i < n; i++ {
 		wg.Add(2)
-		go broadcastPK(chsPK, &nodes[i], i, &wg)
-		go storePk(chsPK[i], &nodes, i, &wg)
+		go broadcastPK(chsPK, nodes[i], i, &wg)
+		go storePk(chsPK[i], nodes, i, &wg)
 	}
 
 	wg.Wait()
@@ -178,22 +186,25 @@ func main() {
 	// if err != nil {
 	// 	panic(err)
 	// }
-	go getCpuInfo()
+	// go getCpuInfo()
+
+	go getCpuLoad()
 
 	for i := 0; i < n; i++ {
 		wg.Add(1)
-		go hashCompute(ips[i], randomness, nodes[i].pk[:], &nodes[i], &wg)
+		go hashCompute(ips[i], randomness, nodes[i].pk[:], nodes[i], &wg)
 	}
 
 	wg.Wait()
 
 	for _, v := range nodes {
-		Doshard(&v, v.id)
+		Doshard(v, v.id)
 	}
 
 	in := time.Since(start)
+
 	fmt.Println("time consumed: ", in)
-	time.Sleep(2*time.Second)
+
 	// return in.Seconds()
 }
 
@@ -201,7 +212,15 @@ func main() {
 func getCpuInfo() {
     // CPU使用率
     for i:=0; i < 5; i++ {
-        percent, _ := cpu.Percent(time.Second, true)
+        percent, _ := cpu.Percent(time.Second, false)
         fmt.Printf("cpu percent:%v\n", percent)
     }
+}
+
+func getCpuLoad() {
+    info, _ := load.Avg()
+	for i:=0; i < 5; i++{
+		fmt.Printf("load: %v\n", info)
+		time.Sleep(100*time.Millisecond)
+	}
 }

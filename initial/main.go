@@ -7,19 +7,21 @@ import (
 	"fmt"
 	"math/rand"
 	crypto "myProject/crypto"
-	"os"
+	// "os"
 	// "os/exec"
 	"sync"
 	"time"
 	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/load"
 )
 
 const denominator float64 = 18446744073709551615
 
 var lock sync.Mutex
 
-const n int = 500 //表示全网节点数目
+const n int = 400 //表示全网节点数目
 const m int = 2 //表示分片的个数
+
 
 type node struct {
 	id        int
@@ -80,11 +82,18 @@ func Sotition(nNode *node, msg []byte, wg *sync.WaitGroup) {
 	lock.Unlock()
 }
 
-func newNode(nNode *node, i int) {
-	nNode.id = i
-	// TODO 初始权重设定 
-	nNode.weight = rand.Intn(3)+1 //[1,3]
-	nNode.pk, nNode.sk = crypto.VrfKeygen()
+func newNode(i int) *node {
+	// nNode.id = i
+	// // TODO 初始权重设定 
+	// nNode.weight = rand.Intn(3)+1
+	pk_tmp, sk_tmp := crypto.VrfKeygen()
+
+	return &node {
+		id:			i,
+		weight:		rand.Intn(3)+1,
+		pk:			pk_tmp,
+		sk: 		sk_tmp,
+	}
 }
 
 func broadcastPK(ch []chan *pkAndId, nNode *node, id int, wg *sync.WaitGroup) {
@@ -163,7 +172,7 @@ func isMeet(nNode *node) float64 {
 	return p
 }
 
-func storePk(ch chan *pkAndId, nNode *[n]node, id int, wg *sync.WaitGroup) {
+func storePk(ch chan *pkAndId, nNode []*node, id int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for i := 0; i < n; i++ {
@@ -172,7 +181,7 @@ func storePk(ch chan *pkAndId, nNode *[n]node, id int, wg *sync.WaitGroup) {
 	}
 }
 
-func storeProof(ch chan *ProofAndId, nNode *[n]node, id int, wg *sync.WaitGroup) {
+func storeProof(ch chan *ProofAndId, nNode []*node, id int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for i := 0; i < n; i++ {
@@ -181,13 +190,13 @@ func storeProof(ch chan *ProofAndId, nNode *[n]node, id int, wg *sync.WaitGroup)
 	}
 }
 
-func storeRnd(ch chan *RndAndId, nNode *[n]node, id int, randomness []byte, wg *sync.WaitGroup) {
+func storeRnd(ch chan *RndAndId, nNode []*node, id int, randomness []byte, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for i := 0; i < n; i++ {
 		tmp := <-ch
 		if tmp.in {
-			ok := verifyRnd(nNode[id].pkList[tmp.id], nNode[id].proofList[tmp.id], tmp.rnd, randomness, id)
+			ok := verifyRnd(nNode[id].pkList[tmp.id], nNode[id].proofList[tmp.id], tmp.rnd, randomness)
 			if ok {
 				nNode[id].idList = append(nNode[id].idList, tmp.id)
 			}
@@ -195,7 +204,7 @@ func storeRnd(ch chan *RndAndId, nNode *[n]node, id int, randomness []byte, wg *
 	}
 }
 
-func verifyRnd(pk crypto.VrfPubkey, proof crypto.VrfProof, output crypto.VrfOutput, msg []byte, id int) bool {
+func verifyRnd(pk crypto.VrfPubkey, proof crypto.VrfProof, output crypto.VrfOutput, msg []byte) bool {
 	ok, output2 := pk.VerifyMy(proof, msg)
 
 	if !ok {
@@ -223,7 +232,8 @@ func main() {
 	chsPK := make([]chan *pkAndId, n)
 	chsProof := make([]chan *ProofAndId, n)
 	chsRnd := make([]chan *RndAndId, n)
-	nodes := [n]node{}
+	// nodes := [n]*node{}
+	nodes := make([]*node, n)
 
 	rand.Seed(time.Now().Unix())
 	randomness, err := GenerateRandomBytes(10)
@@ -235,13 +245,13 @@ func main() {
 		chsPK[i] = make(chan *pkAndId)
 		chsProof[i] = make(chan *ProofAndId)
 		chsRnd[i] = make(chan *RndAndId)
-		newNode(&nodes[i], i)
+		nodes[i] = newNode(i)
 	}
 
 	for i := 0; i < n; i++ {
 		wg.Add(2)
-		go broadcastPK(chsPK, &nodes[i], i, &wg) 
-		go storePk(chsPK[i], &nodes, i, &wg)
+		go broadcastPK(chsPK, nodes[i], i, &wg) 
+		go storePk(chsPK[i], nodes, i, &wg)
 	}
 
 	wg.Wait()
@@ -262,12 +272,12 @@ func main() {
 	// if err != nil {
 	// 	panic(err)
 	// }
-
 	go getCpuInfo()
+	// go getCpuLoad()
 
 	for i := 0; i < n; i++ {
 		wg.Add(1)
-		go Sotition(&nodes[i], randomness, &wg)
+		go Sotition(nodes[i], randomness, &wg)
 	}
 
 	wg.Wait()
@@ -275,61 +285,67 @@ func main() {
 
 	for i := 0; i < n; i++ {
 		wg.Add(2)
-		go broadcastProof(chsProof, &nodes[i], i, &wg)
-		go storeProof(chsProof[i], &nodes, i, &wg)
+		go broadcastProof(chsProof, nodes[i], i, &wg)
+		go storeProof(chsProof[i], nodes, i, &wg)
 	}
 	wg.Wait()
 
 
 	for i := 0; i < n; i++ {
 		wg.Add(2)
-		go broadcastRnd(chsRnd, &nodes[i], i, &wg)
-		go storeRnd(chsRnd[i], &nodes, i, randomness, &wg)
+		go broadcastRnd(chsRnd, nodes[i], i, &wg)
+		go storeRnd(chsRnd[i], nodes, i, randomness, &wg)
 	}
 	wg.Wait()
 
-	for _, v := range nodes[0].idList {
-		wg.Add(1)
-		go Doshard(&nodes[v], v, &wg)
-	}
-	wg.Wait()
+	// for _, v := range nodes[0].idList {
+	// 	wg.Add(1)
+	// 	go Doshard(nodes[v], v, &wg)
+	// }
+	// wg.Wait()
 
 
-	for i := 0; i < m; i++ { //分片个数
-		filename := fmt.Sprintf("shard%v.txt", i)
-		f, err := os.Create(filename) 
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-		for _, v := range nodes[0].idList {
-			if v % m == i { //同属于一个分片
-				for _, v1 := range nodes[v].shardInNode { 
-					_, err = fmt.Fprintf(f, "%v ", v1)
-					if err != nil {
-						panic(err)
-					}
-				}
-				break
-			} else {
-				continue
-			}
-		}
-	}
+	// for i := 0; i < m; i++ { //分片个数
+	// 	filename := fmt.Sprintf("shard%v.txt", i)
+	// 	f, err := os.Create(filename) 
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// 	defer f.Close()
+	// 	for _, v := range nodes[0].idList {
+	// 		if v % m == i { //同属于一个分片
+	// 			for _, v1 := range nodes[v].shardInNode { 
+	// 				_, err = fmt.Fprintf(f, "%v ", v1)
+	// 				if err != nil {
+	// 					panic(err)
+	// 				}
+	// 			}
+	// 			break
+	// 		} else {
+	// 			continue
+	// 		}
+	// 	}
+	// }
 
 	interval := time.Since(start) 
 	fmt.Printf("time consumed: %v\n", interval)
-	time.Sleep(3*time.Second)
+	time.Sleep(1*time.Second)
 	// return interval.Seconds()
 }
 
 
 // cpu使用率 + 负载
-
 func getCpuInfo() {
     // CPU使用率
     for i:=0; i < 5; i++ {
         percent, _ := cpu.Percent(time.Second, true)
         fmt.Printf("cpu percent:%v\n", percent)
     }
+}
+
+func getCpuLoad() {
+    info, _ := load.Avg()
+	for {
+		fmt.Printf("load: %v\n", info)
+	}
 }
