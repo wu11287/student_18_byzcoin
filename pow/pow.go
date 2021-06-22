@@ -1,5 +1,5 @@
-package main
-// package pow
+// package main
+package pow
 
 import (
 	// "hash"
@@ -38,7 +38,6 @@ type pkAndId struct {
 }
 
 func newNode(i int) *node {
-	// nNode.id = i
 	pk_tmp, sk_tmp := crypto.VrfKeygen()
 
 	return &node {
@@ -138,8 +137,8 @@ func checkFileIsExist(filename string) bool {
 	return true
 }
 
-func main() {
-// func powMain() float64 {
+// func main() {
+func powMain() float64 {
 	var wg sync.WaitGroup
 	// nodes := [n]node{}
 	nodes := make([]*node, n)
@@ -205,7 +204,7 @@ func main() {
 
 	fmt.Println("time consumed: ", in)
 
-	// return in.Seconds()
+	return in.Seconds()
 }
 
 

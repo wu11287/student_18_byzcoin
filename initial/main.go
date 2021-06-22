@@ -1,5 +1,5 @@
-// package initial
-package main
+package initial
+// package main
 
 import (
 	"bytes"
@@ -23,10 +23,10 @@ const n int = 400 //表示全网节点数目
 const m int = 2 //表示分片的个数
 
 
-type node struct {
-	id        int
+type Node struct {
+	Id        int
 	weight    int
-	pk        crypto.VrfPubkey
+	Pk        crypto.VrfPubkey
 	sk        crypto.VrfPrivkey
 	rnd       crypto.VrfOutput
 	proof     crypto.VrfProof
@@ -38,7 +38,7 @@ type node struct {
 
 type pkAndId struct {
 	id int
-	pk crypto.VrfPubkey
+	Pk crypto.VrfPubkey
 }
 
 type ProofAndId struct {
@@ -64,7 +64,7 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 	return b, nil
 }
 
-func Sotition(nNode *node, msg []byte, wg *sync.WaitGroup) {
+func Sotition(nNode *Node, msg []byte, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	lock.Lock()
@@ -82,26 +82,23 @@ func Sotition(nNode *node, msg []byte, wg *sync.WaitGroup) {
 	lock.Unlock()
 }
 
-func newNode(i int) *node {
-	// nNode.id = i
-	// // TODO 初始权重设定 
-	// nNode.weight = rand.Intn(3)+1
+func newNode(i int) *Node {
 	pk_tmp, sk_tmp := crypto.VrfKeygen()
 
-	return &node {
-		id:			i,
+	return &Node {
+		Id:			i,
 		weight:		rand.Intn(3)+1,
-		pk:			pk_tmp,
+		Pk:			pk_tmp,
 		sk: 		sk_tmp,
 	}
 }
 
-func broadcastPK(ch []chan *pkAndId, nNode *node, id int, wg *sync.WaitGroup) {
+func broadcastPK(ch []chan *pkAndId, nNode *Node, id int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	lock.Lock()
 
-	tmp := &pkAndId{id, nNode.pk}
+	tmp := &pkAndId{id, nNode.Pk}
 	go func() {
 		for i:=0; i< n; i++ {
 			ch[i] <- tmp
@@ -111,7 +108,7 @@ func broadcastPK(ch []chan *pkAndId, nNode *node, id int, wg *sync.WaitGroup) {
 	lock.Unlock()
 }
 
-func broadcastProof(ch []chan *ProofAndId, nNode *node, id int, wg *sync.WaitGroup) {
+func broadcastProof(ch []chan *ProofAndId, nNode *Node, id int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	lock.Lock()
@@ -126,7 +123,7 @@ func broadcastProof(ch []chan *ProofAndId, nNode *node, id int, wg *sync.WaitGro
 	lock.Unlock()
 }
 
-func broadcastRnd(ch []chan *RndAndId, nNode *node, id int, wg *sync.WaitGroup) {
+func broadcastRnd(ch []chan *RndAndId, nNode *Node, id int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	lock.Lock()
@@ -158,7 +155,7 @@ func broadcastRnd(ch []chan *RndAndId, nNode *node, id int, wg *sync.WaitGroup) 
 	lock.Unlock()
 }
 
-func isMeet(nNode *node) float64 {
+func isMeet(nNode *Node) float64 {
 	bytesBuffer := bytes.NewBuffer(nNode.rnd[:])
 	var x int64
 	binary.Read(bytesBuffer, binary.BigEndian, &x)
@@ -172,16 +169,16 @@ func isMeet(nNode *node) float64 {
 	return p
 }
 
-func storePk(ch chan *pkAndId, nNode []*node, id int, wg *sync.WaitGroup) {
+func storePk(ch chan *pkAndId, nNode []*Node, id int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for i := 0; i < n; i++ {
 		tmp := <-ch
-		nNode[id].pkList[tmp.id] = tmp.pk
+		nNode[id].pkList[tmp.id] = tmp.Pk
 	}
 }
 
-func storeProof(ch chan *ProofAndId, nNode []*node, id int, wg *sync.WaitGroup) {
+func storeProof(ch chan *ProofAndId, nNode []*Node, id int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for i := 0; i < n; i++ {
@@ -190,7 +187,7 @@ func storeProof(ch chan *ProofAndId, nNode []*node, id int, wg *sync.WaitGroup) 
 	}
 }
 
-func storeRnd(ch chan *RndAndId, nNode []*node, id int, randomness []byte, wg *sync.WaitGroup) {
+func storeRnd(ch chan *RndAndId, nNode []*Node, id int, randomness []byte, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for i := 0; i < n; i++ {
@@ -204,8 +201,8 @@ func storeRnd(ch chan *RndAndId, nNode []*node, id int, randomness []byte, wg *s
 	}
 }
 
-func verifyRnd(pk crypto.VrfPubkey, proof crypto.VrfProof, output crypto.VrfOutput, msg []byte) bool {
-	ok, output2 := pk.VerifyMy(proof, msg)
+func verifyRnd(Pk crypto.VrfPubkey, proof crypto.VrfProof, output crypto.VrfOutput, msg []byte) bool {
+	ok, output2 := Pk.VerifyMy(proof, msg)
 
 	if !ok {
 		fmt.Println("verified error")
@@ -215,7 +212,7 @@ func verifyRnd(pk crypto.VrfPubkey, proof crypto.VrfProof, output crypto.VrfOutp
 }
 
 
-func Doshard(nNode *node, idx int, wg *sync.WaitGroup) {
+func Doshard(nNode *Node, idx int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	mod := idx % m 
@@ -226,15 +223,15 @@ func Doshard(nNode *node, idx int, wg *sync.WaitGroup) {
 	}
 }
 
-// func count() float64 {
-func main() {
+func count() float64 {
+// func main() {
 	var wg sync.WaitGroup
 	chsPK := make([]chan *pkAndId, n)
 	chsProof := make([]chan *ProofAndId, n)
 	chsRnd := make([]chan *RndAndId, n)
-	// nodes := [n]*node{}
-	nodes := make([]*node, n)
+	nodes := make([]*Node, n)
 
+	//TODO 宿主机调用
 	rand.Seed(time.Now().Unix())
 	randomness, err := GenerateRandomBytes(10)
 	if err != nil {
@@ -330,7 +327,7 @@ func main() {
 	interval := time.Since(start) 
 	fmt.Printf("time consumed: %v\n", interval)
 	time.Sleep(1*time.Second)
-	// return interval.Seconds()
+	return interval.Seconds()
 }
 
 

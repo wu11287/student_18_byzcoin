@@ -1,0 +1,22 @@
+syntax = "proto3";
+//命名空间
+package initial;
+
+option go_package = "./;initial";
+
+// message描述了一个请求或相应的消息格式，每个message类型对应pb.go文件的一个结构体
+message PkAndId {
+    string pk = 1;
+    int32 id = 2;
+}
+
+message ProofMsg{
+    string proof = 1;
+    int32 id = 2;
+    string ip = 3;
+}
+
+service broadPKService {
+    rpc broadPK(stream PkAndId) returns (stream PkAndId) {}
+    rpc broadProof(stream ProofMsg) returns (stream ProofMsg) {}
+}
