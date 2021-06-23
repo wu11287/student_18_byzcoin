@@ -21,6 +21,7 @@ import (
 //TODO 后续读取环境变量
 const id int = 1
 const denominator float64 = 18446744073709551615
+const m int = 2
 
 //广播ip
 const (
@@ -118,6 +119,7 @@ func runBroadProof(client initial.BroadPKServiceClient, node *Node, randomness [
 	}
 	waitc := make(chan struct{})
 
+	// recv
 	go func() {
 		for {
 			in, err := stream.Recv() //客户端从服务端获得的信息
@@ -146,6 +148,7 @@ func runBroadProof(client initial.BroadPKServiceClient, node *Node, randomness [
 		}
 	}()
 
+	//send
 	for _, msg := range msgs {
 		if err := stream.Send(msg); err != nil {
 			log.Fatalf("Failed to sent msg: %v", err)
@@ -221,12 +224,16 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 	return b, nil
 }
 
+func ToShard() {
+
+}
+
 // 作为一个客户端的角色, 去dial广播地址即可
 // 每个节点同时也需要作为服务端在对应端口8888监听 --- 如何实现？
 func main() {
 	var wg sync.WaitGroup
 	
-	//pk\sk
+	//pk & sk
 	node := newNode(id)
 
 	//ip
@@ -237,7 +244,7 @@ func main() {
 	ip := addrs[1] //得到自己的ip, 随proof一起广播出去
 
 	// broadcast ip
-	conn, err := grpc.Dial(address)
+	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		log.Fatal("create conn err :", err)
 	}
@@ -254,6 +261,9 @@ func main() {
 	// sortition
 	Sotition(node, randomness, &wg)
 	if node.choosed {
-		runBroadProof(client, node, randomness, ip, id)
+		runBroadProof(client, node, randomness, ip.String(), id) 
 	}
+
+	// shard
 }
+
