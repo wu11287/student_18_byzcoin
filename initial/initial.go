@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"io"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	crypto "myProject/crypto"
@@ -25,51 +25,105 @@ const m int = 2
 
 //广播ip
 const (
-	address = "172.17.255.255:50051"
+	address = "10.112.255.255:50051"
 )
 
 var lock sync.Mutex
 
 type Node struct {
-	Id 			int
-	Weight		int
-	Pk 			crypto.VrfPubkey
-	Sk 			crypto.VrfPrivkey
-	PkList 		[]crypto.VrfPubkey
-	Rnd			crypto.VrfOutput
-	Proof 		crypto.VrfProof
-	choosed		bool
-	IpInShard 	[]IPAndId
+	Id        int
+	Weight    int
+	Pk        crypto.VrfPubkey
+	Sk        crypto.VrfPrivkey
+	PkList    []crypto.VrfPubkey
+	Rnd       crypto.VrfOutput
+	Proof     crypto.VrfProof
+	choosed   bool
+	IpInShard []IPAndId
 }
 
 type IPAndId struct {
-	Ip 	string
-	Id 	int
+	Ip string
+	Id int
 }
 
 type PkAndId struct {
-    Id int
-    Pk crypto.VrfPubkey
+	Id int
+	Pk crypto.VrfPubkey
 }
 
 type ProofAndId struct {
-    Id 		int
-    Proof 	crypto.VrfProof
+	Id    int
+	Proof crypto.VrfProof
 }
 
 func newNode(i int) *Node {
 	pk, sk := crypto.VrfKeygen()
-	return &Node {
-		Id:		i,
-		Weight: rand.Intn(3)+1,
-		Pk:		pk,
-		Sk:		sk,
+	return &Node{
+		Id:     i,
+		Weight: rand.Intn(3) + 1,
+		Pk:     pk,
+		Sk:     sk,
 	}
 }
 
-// pk, id
-func runBroadPK(client initial.BroadPKServiceClient, node *Node) {
-	msgs:= []*initial.PkAndId{
+type MyServer struct {
+	initial.UnimplementedBroadAllServer
+	node       *Node
+	randomness []byte
+}
+
+// 作为server处理其他client发过来的消息
+func (s *MyServer) BroadPK(stream initial.BroadAll_BroadPKServer) error {
+	waitc := make(chan struct{})
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			close(waitc)
+			return nil
+		}
+		if err != nil {
+			log.Fatalf("Failed to receive msg : %v", err)
+			return err
+		}
+		var data []byte = []byte(in.Pk)
+		var data2 crypto.VrfPubkey
+		copy(data2[:32], data)
+		s.node.PkList[in.Id] = data2
+	}
+}
+
+func (s *MyServer) BroadProof(stream initial.BroadAll_BroadProofServer) error {
+	waitc := make(chan struct{})
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			// read done.
+			close(waitc)
+			return nil
+		}
+		if err != nil {
+			log.Fatalf("Failed to receive ProofAndId : %v", err)
+		}
+		log.Printf("Got message %s, %d", in.Proof, in.Id)
+
+		//verify proof
+		var data []byte = []byte(in.Proof)
+		var proof crypto.VrfProof
+		copy(proof[:], data)
+		ok := verifyProof(s.node.PkList[in.Id], proof, s.randomness)
+		if !ok {
+			log.Fatalf("verify proof error")
+			return err
+		}
+
+		tmp := IPAndId{Ip: in.Ip, Id: int(in.Id)}
+		s.node.IpInShard = append(s.node.IpInShard, tmp)
+	}
+}
+
+func runBroadPk(client initial.BroadAllClient, node *Node) {
+	msgs := []*initial.PkAndId{
 		{Pk: string(node.Pk[:]), Id: int32(node.Id)}, //[32]byte 转换成string
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -78,26 +132,6 @@ func runBroadPK(client initial.BroadPKServiceClient, node *Node) {
 	if err != nil {
 		log.Fatalf("%v.BroadPK(_) = _, %v", client, err)
 	}
-	waitc := make(chan struct{})
-	go func() {
-		for {
-			in, err := stream.Recv() //客户端从服务端获得的信息
-			if err == io.EOF {
-				// read done.
-				close(waitc)
-				return
-			}
-			if err != nil {
-				log.Fatalf("Failed to receive msg : %v", err)
-			}
-			log.Printf("Got message %s, %d", in.Pk, in.Id) 
-
-			var data []byte = []byte(in.Pk)
-			var data2 crypto.VrfPubkey
-			copy(data2[:32], data)
-			node.PkList[in.Id] = data2
-		}
-	}()
 
 	for _, msg := range msgs {
 		if err := stream.Send(msg); err != nil {
@@ -106,8 +140,7 @@ func runBroadPK(client initial.BroadPKServiceClient, node *Node) {
 	}
 }
 
-
-func runBroadProof(client initial.BroadPKServiceClient, node *Node, randomness []byte, ip string, id int) {
+func runBroadProof(client initial.BroadAllClient, node *Node, randomness []byte, ip string, id int) {
 	msgs := []*initial.ProofMsg{
 		{Proof: string(node.Proof[:]), Id: int32(node.Id), Ip: ip},
 	}
@@ -117,38 +150,7 @@ func runBroadProof(client initial.BroadPKServiceClient, node *Node, randomness [
 	if err != nil {
 		log.Fatalf("%v.BroadProof(_) = _, %v", client, err)
 	}
-	waitc := make(chan struct{})
 
-	// recv
-	go func() {
-		for {
-			in, err := stream.Recv() //客户端从服务端获得的信息
-			if err == io.EOF {
-				// read done.
-				close(waitc)
-				return
-			}
-			if err != nil {
-				log.Fatalf("Failed to receive ProofAndId : %v", err)
-			}
-			log.Printf("Got message %s, %d", in.Proof, in.Id)
-			
-			//verify proof
-			var data []byte = []byte(in.Proof)
-			var proof crypto.VrfProof
-			copy(proof[:], data)
-			ok := verifyProof(node.PkList[in.Id], proof, randomness)
-			if !ok {
-				log.Fatalf("verify proof error")
-				return
-			}
-			
-			tmp := IPAndId{Ip: ip, Id: id}
-			node.IpInShard = append(node.IpInShard, tmp)
-		}
-	}()
-
-	//send
 	for _, msg := range msgs {
 		if err := stream.Send(msg); err != nil {
 			log.Fatalf("Failed to sent msg: %v", err)
@@ -166,7 +168,6 @@ func verifyProof(Pk crypto.VrfPubkey, proof crypto.VrfProof, msg []byte) bool {
 	}
 	return ok
 }
-
 
 // msg 是全局一致的随机值
 func Sotition(node *Node, msg []byte, wg *sync.WaitGroup) {
@@ -193,7 +194,6 @@ func Sotition(node *Node, msg []byte, wg *sync.WaitGroup) {
 		}
 	}
 }
-
 
 func VerifyRnd(node *Node) bool {
 	bytesBuffer := bytes.NewBuffer(node.Rnd[:])
@@ -229,30 +229,26 @@ func ToShard() {
 }
 
 // 作为一个客户端的角色, 去dial广播地址即可
-// 每个节点同时也需要作为服务端在对应端口8888监听 --- 如何实现？
+// 每个节点同时也需要作为服务端在对应端口 8888 监听 --- 如何实现？
 func main() {
 	var wg sync.WaitGroup
-	
-	//pk & sk
-	node := newNode(id)
 
-	//ip
+	node := newNode(id)
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		panic(err)
-	}	
-	ip := addrs[1] //得到自己的ip, 随proof一起广播出去
+	}
+	ip := addrs[1]
+	fmt.Println(ip) //10.112 网段
 
-	// broadcast ip
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		log.Fatal("create conn err :", err)
 	}
 	defer conn.Close()
 
-	client := initial.NewBroadPKServiceClient(conn)
-	runBroadPK(client, node) 
-
+	client := initial.NewBroadAllClient(conn)
+	runBroadPk(client, node)
 
 	randomness, err := GenerateRandomBytes(10) //不用seed会产生确定性结果
 	if err != nil {
@@ -261,9 +257,8 @@ func main() {
 	// sortition
 	Sotition(node, randomness, &wg)
 	if node.choosed {
-		runBroadProof(client, node, randomness, ip.String(), id) 
+		runBroadProof(client, node, randomness, ip.String(), id)
 	}
 
-	// shard
+	// 对IpInShard分片
 }
-

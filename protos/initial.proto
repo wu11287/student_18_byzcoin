@@ -16,7 +16,7 @@ message ProofMsg{
     string ip = 3;
 }
 
-service broadPKService {
-    rpc broadPK(stream PkAndId) returns (stream PkAndId) {}
-    rpc broadProof(stream ProofMsg) returns (stream ProofMsg) {}
+service BroadAll {
+    rpc BroadPK(stream PkAndId) returns (stream PkAndId) {}
+    rpc BroadProof(stream ProofMsg) returns (stream ProofMsg) {}
 }

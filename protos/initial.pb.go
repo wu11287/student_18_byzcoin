@@ -156,16 +156,16 @@ var file_initial_proto_rawDesc = []byte{
 	0x14, 0x0a, 0x05, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
 	0x70, 0x72, 0x6f, 0x6f, 0x66, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28,
 	0x05, 0x52, 0x02, 0x69, 0x64, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x70, 0x18, 0x03, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x02, 0x69, 0x70, 0x32, 0x7f, 0x0a, 0x0e, 0x62, 0x72, 0x6f, 0x61, 0x64, 0x50, 0x4b,
-	0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x33, 0x0a, 0x07, 0x62, 0x72, 0x6f, 0x61, 0x64,
-	0x50, 0x4b, 0x12, 0x10, 0x2e, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x2e, 0x50, 0x6b, 0x41,
-	0x6e, 0x64, 0x49, 0x64, 0x1a, 0x10, 0x2e, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x2e, 0x50,
-	0x6b, 0x41, 0x6e, 0x64, 0x49, 0x64, 0x22, 0x00, 0x28, 0x01, 0x30, 0x01, 0x12, 0x38, 0x0a, 0x0a,
-	0x62, 0x72, 0x6f, 0x61, 0x64, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x12, 0x11, 0x2e, 0x69, 0x6e, 0x69,
-	0x74, 0x69, 0x61, 0x6c, 0x2e, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x4d, 0x73, 0x67, 0x1a, 0x11, 0x2e,
-	0x69, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x2e, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x4d, 0x73, 0x67,
-	0x22, 0x00, 0x28, 0x01, 0x30, 0x01, 0x42, 0x0c, 0x5a, 0x0a, 0x2e, 0x2f, 0x3b, 0x69, 0x6e, 0x69,
-	0x74, 0x69, 0x61, 0x6c, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x09, 0x52, 0x02, 0x69, 0x70, 0x32, 0x79, 0x0a, 0x08, 0x42, 0x72, 0x6f, 0x61, 0x64, 0x41, 0x6c,
+	0x6c, 0x12, 0x33, 0x0a, 0x07, 0x42, 0x72, 0x6f, 0x61, 0x64, 0x50, 0x4b, 0x12, 0x10, 0x2e, 0x69,
+	0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x2e, 0x50, 0x6b, 0x41, 0x6e, 0x64, 0x49, 0x64, 0x1a, 0x10,
+	0x2e, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x2e, 0x50, 0x6b, 0x41, 0x6e, 0x64, 0x49, 0x64,
+	0x22, 0x00, 0x28, 0x01, 0x30, 0x01, 0x12, 0x38, 0x0a, 0x0a, 0x42, 0x72, 0x6f, 0x61, 0x64, 0x50,
+	0x72, 0x6f, 0x6f, 0x66, 0x12, 0x11, 0x2e, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x2e, 0x50,
+	0x72, 0x6f, 0x6f, 0x66, 0x4d, 0x73, 0x67, 0x1a, 0x11, 0x2e, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x61,
+	0x6c, 0x2e, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x4d, 0x73, 0x67, 0x22, 0x00, 0x28, 0x01, 0x30, 0x01,
+	0x42, 0x0c, 0x5a, 0x0a, 0x2e, 0x2f, 0x3b, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x62, 0x06,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -186,10 +186,10 @@ var file_initial_proto_goTypes = []interface{}{
 	(*ProofMsg)(nil), // 1: initial.ProofMsg
 }
 var file_initial_proto_depIdxs = []int32{
-	0, // 0: initial.broadPKService.broadPK:input_type -> initial.PkAndId
-	1, // 1: initial.broadPKService.broadProof:input_type -> initial.ProofMsg
-	0, // 2: initial.broadPKService.broadPK:output_type -> initial.PkAndId
-	1, // 3: initial.broadPKService.broadProof:output_type -> initial.ProofMsg
+	0, // 0: initial.BroadAll.BroadPK:input_type -> initial.PkAndId
+	1, // 1: initial.BroadAll.BroadProof:input_type -> initial.ProofMsg
+	0, // 2: initial.BroadAll.BroadPK:output_type -> initial.PkAndId
+	1, // 3: initial.BroadAll.BroadProof:output_type -> initial.ProofMsg
 	2, // [2:4] is the sub-list for method output_type
 	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -256,46 +256,46 @@ var _ grpc.ClientConnInterface
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion6
 
-// BroadPKServiceClient is the client API for BroadPKService service.
+// BroadAllClient is the client API for BroadAll service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type BroadPKServiceClient interface {
-	BroadPK(ctx context.Context, opts ...grpc.CallOption) (BroadPKService_BroadPKClient, error)
-	BroadProof(ctx context.Context, opts ...grpc.CallOption) (BroadPKService_BroadProofClient, error)
+type BroadAllClient interface {
+	BroadPK(ctx context.Context, opts ...grpc.CallOption) (BroadAll_BroadPKClient, error)
+	BroadProof(ctx context.Context, opts ...grpc.CallOption) (BroadAll_BroadProofClient, error)
 }
 
-type broadPKServiceClient struct {
+type broadAllClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewBroadPKServiceClient(cc grpc.ClientConnInterface) BroadPKServiceClient {
-	return &broadPKServiceClient{cc}
+func NewBroadAllClient(cc grpc.ClientConnInterface) BroadAllClient {
+	return &broadAllClient{cc}
 }
 
-func (c *broadPKServiceClient) BroadPK(ctx context.Context, opts ...grpc.CallOption) (BroadPKService_BroadPKClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_BroadPKService_serviceDesc.Streams[0], "/initial.broadPKService/broadPK", opts...)
+func (c *broadAllClient) BroadPK(ctx context.Context, opts ...grpc.CallOption) (BroadAll_BroadPKClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_BroadAll_serviceDesc.Streams[0], "/initial.BroadAll/BroadPK", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &broadPKServiceBroadPKClient{stream}
+	x := &broadAllBroadPKClient{stream}
 	return x, nil
 }
 
-type BroadPKService_BroadPKClient interface {
+type BroadAll_BroadPKClient interface {
 	Send(*PkAndId) error
 	Recv() (*PkAndId, error)
 	grpc.ClientStream
 }
 
-type broadPKServiceBroadPKClient struct {
+type broadAllBroadPKClient struct {
 	grpc.ClientStream
 }
 
-func (x *broadPKServiceBroadPKClient) Send(m *PkAndId) error {
+func (x *broadAllBroadPKClient) Send(m *PkAndId) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *broadPKServiceBroadPKClient) Recv() (*PkAndId, error) {
+func (x *broadAllBroadPKClient) Recv() (*PkAndId, error) {
 	m := new(PkAndId)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -303,30 +303,30 @@ func (x *broadPKServiceBroadPKClient) Recv() (*PkAndId, error) {
 	return m, nil
 }
 
-func (c *broadPKServiceClient) BroadProof(ctx context.Context, opts ...grpc.CallOption) (BroadPKService_BroadProofClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_BroadPKService_serviceDesc.Streams[1], "/initial.broadPKService/broadProof", opts...)
+func (c *broadAllClient) BroadProof(ctx context.Context, opts ...grpc.CallOption) (BroadAll_BroadProofClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_BroadAll_serviceDesc.Streams[1], "/initial.BroadAll/BroadProof", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &broadPKServiceBroadProofClient{stream}
+	x := &broadAllBroadProofClient{stream}
 	return x, nil
 }
 
-type BroadPKService_BroadProofClient interface {
+type BroadAll_BroadProofClient interface {
 	Send(*ProofMsg) error
 	Recv() (*ProofMsg, error)
 	grpc.ClientStream
 }
 
-type broadPKServiceBroadProofClient struct {
+type broadAllBroadProofClient struct {
 	grpc.ClientStream
 }
 
-func (x *broadPKServiceBroadProofClient) Send(m *ProofMsg) error {
+func (x *broadAllBroadProofClient) Send(m *ProofMsg) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *broadPKServiceBroadProofClient) Recv() (*ProofMsg, error) {
+func (x *broadAllBroadProofClient) Recv() (*ProofMsg, error) {
 	m := new(ProofMsg)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -334,46 +334,46 @@ func (x *broadPKServiceBroadProofClient) Recv() (*ProofMsg, error) {
 	return m, nil
 }
 
-// BroadPKServiceServer is the server API for BroadPKService service.
-type BroadPKServiceServer interface {
-	BroadPK(BroadPKService_BroadPKServer) error
-	BroadProof(BroadPKService_BroadProofServer) error
+// BroadAllServer is the server API for BroadAll service.
+type BroadAllServer interface {
+	BroadPK(BroadAll_BroadPKServer) error
+	BroadProof(BroadAll_BroadProofServer) error
 }
 
-// UnimplementedBroadPKServiceServer can be embedded to have forward compatible implementations.
-type UnimplementedBroadPKServiceServer struct {
+// UnimplementedBroadAllServer can be embedded to have forward compatible implementations.
+type UnimplementedBroadAllServer struct {
 }
 
-func (*UnimplementedBroadPKServiceServer) BroadPK(BroadPKService_BroadPKServer) error {
+func (*UnimplementedBroadAllServer) BroadPK(BroadAll_BroadPKServer) error {
 	return status.Errorf(codes.Unimplemented, "method BroadPK not implemented")
 }
-func (*UnimplementedBroadPKServiceServer) BroadProof(BroadPKService_BroadProofServer) error {
+func (*UnimplementedBroadAllServer) BroadProof(BroadAll_BroadProofServer) error {
 	return status.Errorf(codes.Unimplemented, "method BroadProof not implemented")
 }
 
-func RegisterBroadPKServiceServer(s *grpc.Server, srv BroadPKServiceServer) {
-	s.RegisterService(&_BroadPKService_serviceDesc, srv)
+func RegisterBroadAllServer(s *grpc.Server, srv BroadAllServer) {
+	s.RegisterService(&_BroadAll_serviceDesc, srv)
 }
 
-func _BroadPKService_BroadPK_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(BroadPKServiceServer).BroadPK(&broadPKServiceBroadPKServer{stream})
+func _BroadAll_BroadPK_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(BroadAllServer).BroadPK(&broadAllBroadPKServer{stream})
 }
 
-type BroadPKService_BroadPKServer interface {
+type BroadAll_BroadPKServer interface {
 	Send(*PkAndId) error
 	Recv() (*PkAndId, error)
 	grpc.ServerStream
 }
 
-type broadPKServiceBroadPKServer struct {
+type broadAllBroadPKServer struct {
 	grpc.ServerStream
 }
 
-func (x *broadPKServiceBroadPKServer) Send(m *PkAndId) error {
+func (x *broadAllBroadPKServer) Send(m *PkAndId) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *broadPKServiceBroadPKServer) Recv() (*PkAndId, error) {
+func (x *broadAllBroadPKServer) Recv() (*PkAndId, error) {
 	m := new(PkAndId)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -381,25 +381,25 @@ func (x *broadPKServiceBroadPKServer) Recv() (*PkAndId, error) {
 	return m, nil
 }
 
-func _BroadPKService_BroadProof_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(BroadPKServiceServer).BroadProof(&broadPKServiceBroadProofServer{stream})
+func _BroadAll_BroadProof_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(BroadAllServer).BroadProof(&broadAllBroadProofServer{stream})
 }
 
-type BroadPKService_BroadProofServer interface {
+type BroadAll_BroadProofServer interface {
 	Send(*ProofMsg) error
 	Recv() (*ProofMsg, error)
 	grpc.ServerStream
 }
 
-type broadPKServiceBroadProofServer struct {
+type broadAllBroadProofServer struct {
 	grpc.ServerStream
 }
 
-func (x *broadPKServiceBroadProofServer) Send(m *ProofMsg) error {
+func (x *broadAllBroadProofServer) Send(m *ProofMsg) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *broadPKServiceBroadProofServer) Recv() (*ProofMsg, error) {
+func (x *broadAllBroadProofServer) Recv() (*ProofMsg, error) {
 	m := new(ProofMsg)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -407,20 +407,20 @@ func (x *broadPKServiceBroadProofServer) Recv() (*ProofMsg, error) {
 	return m, nil
 }
 
-var _BroadPKService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "initial.broadPKService",
-	HandlerType: (*BroadPKServiceServer)(nil),
+var _BroadAll_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "initial.BroadAll",
+	HandlerType: (*BroadAllServer)(nil),
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "broadPK",
-			Handler:       _BroadPKService_BroadPK_Handler,
+			StreamName:    "BroadPK",
+			Handler:       _BroadAll_BroadPK_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
 		{
-			StreamName:    "broadProof",
-			Handler:       _BroadPKService_BroadProof_Handler,
+			StreamName:    "BroadProof",
+			Handler:       _BroadAll_BroadProof_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
