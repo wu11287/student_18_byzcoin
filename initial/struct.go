@@ -1,32 +1,20 @@
-package main
+package initial
 
 import (
 	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
-	"io"
 	"log"
 	"math/rand"
 	crypto "myProject/crypto"
-	"net"
 	"sync"
 	"time"
 
 	initial "myProject/protos"
-
-	"google.golang.org/grpc"
 )
 
-//TODO 后续读取环境变量
-const id int = 1
 const denominator float64 = 18446744073709551615
-const m int = 2
-
-//广播ip
-const (
-	address = "10.112.255.255:50051"
-)
 
 var lock sync.Mutex
 
@@ -41,6 +29,7 @@ type Node struct {
 	choosed   bool
 	IpInShard []IPAndId
 }
+
 
 type IPAndId struct {
 	Ip string
@@ -57,7 +46,7 @@ type ProofAndId struct {
 	Proof crypto.VrfProof
 }
 
-func newNode(i int) *Node {
+func NewNode(i int) *Node {
 	pk, sk := crypto.VrfKeygen()
 	return &Node{
 		Id:     i,
@@ -67,62 +56,9 @@ func newNode(i int) *Node {
 	}
 }
 
-type MyServer struct {
-	initial.UnimplementedBroadAllServer
-	node       *Node
-	randomness []byte
-}
 
-// 作为server处理其他client发过来的消息
-func (s *MyServer) BroadPK(stream initial.BroadAll_BroadPKServer) error {
-	waitc := make(chan struct{})
-	for {
-		in, err := stream.Recv()
-		if err == io.EOF {
-			close(waitc)
-			return nil
-		}
-		if err != nil {
-			log.Fatalf("Failed to receive msg : %v", err)
-			return err
-		}
-		var data []byte = []byte(in.Pk)
-		var data2 crypto.VrfPubkey
-		copy(data2[:32], data)
-		s.node.PkList[in.Id] = data2
-	}
-}
-
-func (s *MyServer) BroadProof(stream initial.BroadAll_BroadProofServer) error {
-	waitc := make(chan struct{})
-	for {
-		in, err := stream.Recv()
-		if err == io.EOF {
-			// read done.
-			close(waitc)
-			return nil
-		}
-		if err != nil {
-			log.Fatalf("Failed to receive ProofAndId : %v", err)
-		}
-		log.Printf("Got message %s, %d", in.Proof, in.Id)
-
-		//verify proof
-		var data []byte = []byte(in.Proof)
-		var proof crypto.VrfProof
-		copy(proof[:], data)
-		ok := verifyProof(s.node.PkList[in.Id], proof, s.randomness)
-		if !ok {
-			log.Fatalf("verify proof error")
-			return err
-		}
-
-		tmp := IPAndId{Ip: in.Ip, Id: int(in.Id)}
-		s.node.IpInShard = append(s.node.IpInShard, tmp)
-	}
-}
-
-func runBroadPk(client initial.BroadAllClient, node *Node) {
+// 客户端其实没必要用流，因为只发送一次，应该设置成 服务端单向
+func RunBroadPk(client initial.BroadAllClient, node *Node) {
 	msgs := []*initial.PkAndId{
 		{Pk: string(node.Pk[:]), Id: int32(node.Id)}, //[32]byte 转换成string
 	}
@@ -133,11 +69,13 @@ func runBroadPk(client initial.BroadAllClient, node *Node) {
 		log.Fatalf("%v.BroadPK(_) = _, %v", client, err)
 	}
 
+	waitc := make(chan struct{})
 	for _, msg := range msgs {
 		if err := stream.Send(msg); err != nil {
 			log.Fatalf("Failed to sent msg: %v", err)
 		}
 	}
+	<- waitc
 }
 
 func runBroadProof(client initial.BroadAllClient, node *Node, randomness []byte, ip string, id int) {
@@ -159,7 +97,7 @@ func runBroadProof(client initial.BroadAllClient, node *Node, randomness []byte,
 }
 
 // 传播的时候没有传播rnd
-func verifyProof(Pk crypto.VrfPubkey, proof crypto.VrfProof, msg []byte) bool {
+func VerifyProof(Pk crypto.VrfPubkey, proof crypto.VrfProof, msg []byte) bool {
 	ok, _ := Pk.VerifyMy(proof, msg)
 
 	if !ok {
@@ -222,43 +160,4 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 	}
 
 	return b, nil
-}
-
-func ToShard() {
-
-}
-
-// 作为一个客户端的角色, 去dial广播地址即可
-// 每个节点同时也需要作为服务端在对应端口 8888 监听 --- 如何实现？
-func main() {
-	var wg sync.WaitGroup
-
-	node := newNode(id)
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		panic(err)
-	}
-	ip := addrs[1]
-	fmt.Println(ip) //10.112 网段
-
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
-	if err != nil {
-		log.Fatal("create conn err :", err)
-	}
-	defer conn.Close()
-
-	client := initial.NewBroadAllClient(conn)
-	runBroadPk(client, node)
-
-	randomness, err := GenerateRandomBytes(10) //不用seed会产生确定性结果
-	if err != nil {
-		log.Fatalf("generate randomness error: %v", err)
-	}
-	// sortition
-	Sotition(node, randomness, &wg)
-	if node.choosed {
-		runBroadProof(client, node, randomness, ip.String(), id)
-	}
-
-	// 对IpInShard分片
 }
