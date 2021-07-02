@@ -102,3 +102,11 @@ Algorand的选举过程
 
 ### docker-compose
 - 定义和运行多容器docker程序
+
+
+### 运行过程
+1. 所有节点作为服务端，监听在50051端口
+2. 假设开启两个client，这两个docker主机的ip是知道的
+- client1和client2的互联
+- 看这两个主机是否有预定结果 --- 打印pk和id
+-

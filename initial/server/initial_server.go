@@ -3,92 +3,87 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
 	"log"
-	crypto "myProject/crypto"
-	initial "myProject/protos"
 	"net"
+	"os"
+	initial "myProject/initial"
+	crypto "myProject/crypto"
+	pt "myProject/protos"
 
 	"google.golang.org/grpc"
-
-	st "myProject/initial"
 )
-
 
 var (
-	port = flag.Int("port", 50051, "The server port")
+	port = flag.Int("port", 50001, "The server port")
+	lst = make(map[int32][]byte, 200) 
 )
 
 
+func init() {
+	log.SetFlags(log.LstdFlags |log.Lshortfile |log.LUTC)
+}
+
 type MyServer struct {
-	initial.UnimplementedBroadAllServer
-	node       *st.Node
-	randomness []byte
+	pt.UnimplementedBroadAllServer
 }
 
-
-// 作为server处理其他client发过来的消息，但是不回复任何消息
-// 因为广播地址是255，所以每个节点实际上和全网所有节点发消息，其他节点收到就存储消息即可
-func (s *MyServer) BroadPK(stream initial.BroadAll_BroadPKServer) error {
-	waitc := make(chan struct{})
-	for {
-		in, err := stream.Recv()
-		if err == io.EOF {
-			close(waitc)
-			return nil
-		}
+func getF() *os.File {
+	filename := fmt.Sprintln("PkList.txt",)
+	var f *os.File
+	var err error
+	if initial.CheckFileIsExist(filename) {
+		f, err = os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
-			log.Fatalf("Failed to receive msg : %v", err)
-			return err
+			log.Printf("write PkAndId error: %v", err)
 		}
-		fmt.Printf("server received msg: pk = %v, id = %v\n", in.Pk, in.Id)
-		var data []byte = []byte(in.Pk)
-		var data2 crypto.VrfPubkey
-		copy(data2[:32], data)
-		s.node.PkList[in.Id] = data2
-	}
-}
-
-
-
-// 服务端定义的方法，供客户端调用
-func (s *MyServer) BroadProof(stream initial.BroadAll_BroadProofServer) error {
-	waitc := make(chan struct{})
-	for {
-		in, err := stream.Recv()
-		if err == io.EOF {
-			// read done.
-			close(waitc)
-			return nil
-		}
+	} else {
+		f, err = os.Create(filename)
 		if err != nil {
-			log.Fatalf("Failed to receive ProofAndId : %v", err)
+			panic(err)
 		}
-		log.Printf("Got message %s, %d", in.Proof, in.Id)
-
-		//verify proof
-		var data []byte = []byte(in.Proof)
-		var proof crypto.VrfProof
-		copy(proof[:], data)
-		ok := st.VerifyProof(s.node.PkList[in.Id], proof, s.randomness)
-		if !ok {
-			log.Fatalf("verify proof error")
-			return err
-		}
-
-		tmp := st.IPAndId{Ip: in.Ip, Id: int(in.Id)}
-		s.node.IpInShard = append(s.node.IpInShard, tmp)
 	}
+	return f
 }
 
+func (s *MyServer) BroadPK(re *pt.PkAndId, stream pt.BroadAll_BroadPKServer) error {
+	log.Println("pk = ", re.Pk)
+	f := getF()
+	_, err := fmt.Fprintf(f, "%v, %v\n", re.Id, re.Pk)
+
+	lst[re.Id] = re.Pk
+	if err != nil {
+		log.Printf("write pkandid in file error: %v", err)
+	}
+	return nil
+}
+
+func (s *MyServer) BroadProof(re *pt.ProofMsg, stream pt.BroadAll_BroadProofServer) error {
+	// log.Println("proof = ", re.Proof)
+	// log.Println("id = ", re.Id)
+	// log.Println("ip = ", re.Ip)
+
+	//verify proof === 如何得到对应的pk
+	var data []byte = []byte(re.Proof)
+	var proof crypto.VrfProof
+	copy(proof[:], data)
+
+	pk_tmp := lst[re.Id]
+	var pk crypto.VrfPubkey
+	copy(pk[:],pk_tmp)
+	ok := initial.VerifyProof(pk, proof, re.Randomness) //证明这个proof确实是pk根据消息randomness产生的
+	if !ok {
+		log.Fatalf("verify proof error")
+	}
+	return nil
+}
 
 func main() {
 	flag.Parse()
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
-        log.Fatalf("failed to listen: %v", err)
-    }
+		log.Fatalf("failed to listen: %v", err)
+	}
 	grpcServer := grpc.NewServer()
-	initial.RegisterBroadAllServer(grpcServer, &MyServer{})
+	pt.RegisterBroadAllServer(grpcServer, &MyServer{})
 	grpcServer.Serve(lis)
 }

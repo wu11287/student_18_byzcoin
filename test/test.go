@@ -5,23 +5,22 @@ import (
 	// "encoding/binary"
 	"fmt"
 	crypto "myProject/crypto" //注意要写绝对路径，从gopath开始
-	"time"
 )
 
 // const denominator float64 = 18446744073709551615
 
 func main()  {
 	sotition()
-	//1. 生成公私钥
-	// pk, sk := crypto.VrfKeygen()
-	// fmt.Println(pk)
-	// fmt.Println(sk)
+	// 1. 生成公私钥
+	pk, sk := crypto.VrfKeygen()
+	fmt.Println("pk = ", pk)
+	fmt.Println("sk = ", sk)
 
-	// pk2 := sk.Pubkey() //证明人得到私钥
-	// fmt.Println(pk2)
-	// if pk == pk2 {
-	// 	fmt.Println("veritfy success")
-	// }
+	pk2 := sk.Pubkey()
+	fmt.Println(pk2)
+	if pk == pk2 {
+		fmt.Println("veritfy success")
+	}
 	// var success bool = false
 
 	// msg := ([]byte)("hello")
@@ -75,14 +74,11 @@ func sotition() {
 	if !ok {
 		fmt.Println("proof generated error")
 	}
-	output1, ok := proof.Hash()
-	time.Sleep(time.Second * 3)
-	output2, ok := proof.Hash()
+	output, ok := proof.Hash() // 对proof的hash结果是确定的
 	if !ok {
 		fmt.Println("output generated error")
 	}
-	fmt.Printf("output1 = %v\n", output1)
-	fmt.Printf("output2 = %v\n", output2)
+	fmt.Printf("output1 = %v\n", output)
 }
 
 /*

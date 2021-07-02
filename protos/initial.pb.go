@@ -4,8 +4,6 @@
 // 	protoc        (unknown)
 // source: initial.proto
 
-//命名空间
-
 package initial
 
 import (
@@ -26,13 +24,12 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// message描述了一个请求或相应的消息格式，每个message类型对应pb.go文件的一个结构体
 type PkAndId struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Pk string `protobuf:"bytes,1,opt,name=pk,proto3" json:"pk,omitempty"`
+	Pk []byte `protobuf:"bytes,1,opt,name=pk,proto3" json:"pk,omitempty"`
 	Id int32  `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
 }
 
@@ -68,11 +65,11 @@ func (*PkAndId) Descriptor() ([]byte, []int) {
 	return file_initial_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *PkAndId) GetPk() string {
+func (x *PkAndId) GetPk() []byte {
 	if x != nil {
 		return x.Pk
 	}
-	return ""
+	return nil
 }
 
 func (x *PkAndId) GetId() int32 {
@@ -87,9 +84,10 @@ type ProofMsg struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Proof string `protobuf:"bytes,1,opt,name=proof,proto3" json:"proof,omitempty"`
-	Id    int32  `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
-	Ip    string `protobuf:"bytes,3,opt,name=ip,proto3" json:"ip,omitempty"`
+	Proof      []byte `protobuf:"bytes,1,opt,name=proof,proto3" json:"proof,omitempty"`
+	Id         int32  `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
+	Ip         []byte `protobuf:"bytes,3,opt,name=ip,proto3" json:"ip,omitempty"`
+	Randomness []byte `protobuf:"bytes,4,opt,name=randomness,proto3" json:"randomness,omitempty"`
 }
 
 func (x *ProofMsg) Reset() {
@@ -124,11 +122,11 @@ func (*ProofMsg) Descriptor() ([]byte, []int) {
 	return file_initial_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ProofMsg) GetProof() string {
+func (x *ProofMsg) GetProof() []byte {
 	if x != nil {
 		return x.Proof
 	}
-	return ""
+	return nil
 }
 
 func (x *ProofMsg) GetId() int32 {
@@ -138,11 +136,18 @@ func (x *ProofMsg) GetId() int32 {
 	return 0
 }
 
-func (x *ProofMsg) GetIp() string {
+func (x *ProofMsg) GetIp() []byte {
 	if x != nil {
 		return x.Ip
 	}
-	return ""
+	return nil
+}
+
+func (x *ProofMsg) GetRandomness() []byte {
+	if x != nil {
+		return x.Randomness
+	}
+	return nil
 }
 
 var File_initial_proto protoreflect.FileDescriptor
@@ -150,22 +155,24 @@ var File_initial_proto protoreflect.FileDescriptor
 var file_initial_proto_rawDesc = []byte{
 	0x0a, 0x0d, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12,
 	0x07, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x22, 0x29, 0x0a, 0x07, 0x50, 0x6b, 0x41, 0x6e,
-	0x64, 0x49, 0x64, 0x12, 0x0e, 0x0a, 0x02, 0x70, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x64, 0x49, 0x64, 0x12, 0x0e, 0x0a, 0x02, 0x70, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52,
 	0x02, 0x70, 0x6b, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52,
-	0x02, 0x69, 0x64, 0x22, 0x40, 0x0a, 0x08, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x4d, 0x73, 0x67, 0x12,
-	0x14, 0x0a, 0x05, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
+	0x02, 0x69, 0x64, 0x22, 0x60, 0x0a, 0x08, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x4d, 0x73, 0x67, 0x12,
+	0x14, 0x0a, 0x05, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05,
 	0x70, 0x72, 0x6f, 0x6f, 0x66, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28,
 	0x05, 0x52, 0x02, 0x69, 0x64, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x70, 0x18, 0x03, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x02, 0x69, 0x70, 0x32, 0x79, 0x0a, 0x08, 0x42, 0x72, 0x6f, 0x61, 0x64, 0x41, 0x6c,
-	0x6c, 0x12, 0x33, 0x0a, 0x07, 0x42, 0x72, 0x6f, 0x61, 0x64, 0x50, 0x4b, 0x12, 0x10, 0x2e, 0x69,
+	0x0c, 0x52, 0x02, 0x69, 0x70, 0x12, 0x1e, 0x0a, 0x0a, 0x72, 0x61, 0x6e, 0x64, 0x6f, 0x6d, 0x6e,
+	0x65, 0x73, 0x73, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0a, 0x72, 0x61, 0x6e, 0x64, 0x6f,
+	0x6d, 0x6e, 0x65, 0x73, 0x73, 0x32, 0x75, 0x0a, 0x08, 0x42, 0x72, 0x6f, 0x61, 0x64, 0x41, 0x6c,
+	0x6c, 0x12, 0x31, 0x0a, 0x07, 0x42, 0x72, 0x6f, 0x61, 0x64, 0x50, 0x4b, 0x12, 0x10, 0x2e, 0x69,
 	0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x2e, 0x50, 0x6b, 0x41, 0x6e, 0x64, 0x49, 0x64, 0x1a, 0x10,
 	0x2e, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x2e, 0x50, 0x6b, 0x41, 0x6e, 0x64, 0x49, 0x64,
-	0x22, 0x00, 0x28, 0x01, 0x30, 0x01, 0x12, 0x38, 0x0a, 0x0a, 0x42, 0x72, 0x6f, 0x61, 0x64, 0x50,
-	0x72, 0x6f, 0x6f, 0x66, 0x12, 0x11, 0x2e, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x2e, 0x50,
-	0x72, 0x6f, 0x6f, 0x66, 0x4d, 0x73, 0x67, 0x1a, 0x11, 0x2e, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x61,
-	0x6c, 0x2e, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x4d, 0x73, 0x67, 0x22, 0x00, 0x28, 0x01, 0x30, 0x01,
-	0x42, 0x0c, 0x5a, 0x0a, 0x2e, 0x2f, 0x3b, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x22, 0x00, 0x30, 0x01, 0x12, 0x36, 0x0a, 0x0a, 0x42, 0x72, 0x6f, 0x61, 0x64, 0x50, 0x72, 0x6f,
+	0x6f, 0x66, 0x12, 0x11, 0x2e, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x2e, 0x50, 0x72, 0x6f,
+	0x6f, 0x66, 0x4d, 0x73, 0x67, 0x1a, 0x11, 0x2e, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x2e,
+	0x50, 0x72, 0x6f, 0x6f, 0x66, 0x4d, 0x73, 0x67, 0x22, 0x00, 0x30, 0x01, 0x42, 0x0c, 0x5a, 0x0a,
+	0x2e, 0x2f, 0x3b, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x33,
 }
 
 var (
@@ -260,8 +267,8 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type BroadAllClient interface {
-	BroadPK(ctx context.Context, opts ...grpc.CallOption) (BroadAll_BroadPKClient, error)
-	BroadProof(ctx context.Context, opts ...grpc.CallOption) (BroadAll_BroadProofClient, error)
+	BroadPK(ctx context.Context, in *PkAndId, opts ...grpc.CallOption) (BroadAll_BroadPKClient, error)
+	BroadProof(ctx context.Context, in *ProofMsg, opts ...grpc.CallOption) (BroadAll_BroadProofClient, error)
 }
 
 type broadAllClient struct {
@@ -272,27 +279,28 @@ func NewBroadAllClient(cc grpc.ClientConnInterface) BroadAllClient {
 	return &broadAllClient{cc}
 }
 
-func (c *broadAllClient) BroadPK(ctx context.Context, opts ...grpc.CallOption) (BroadAll_BroadPKClient, error) {
+func (c *broadAllClient) BroadPK(ctx context.Context, in *PkAndId, opts ...grpc.CallOption) (BroadAll_BroadPKClient, error) {
 	stream, err := c.cc.NewStream(ctx, &_BroadAll_serviceDesc.Streams[0], "/initial.BroadAll/BroadPK", opts...)
 	if err != nil {
 		return nil, err
 	}
 	x := &broadAllBroadPKClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	return x, nil
 }
 
 type BroadAll_BroadPKClient interface {
-	Send(*PkAndId) error
 	Recv() (*PkAndId, error)
 	grpc.ClientStream
 }
 
 type broadAllBroadPKClient struct {
 	grpc.ClientStream
-}
-
-func (x *broadAllBroadPKClient) Send(m *PkAndId) error {
-	return x.ClientStream.SendMsg(m)
 }
 
 func (x *broadAllBroadPKClient) Recv() (*PkAndId, error) {
@@ -303,27 +311,28 @@ func (x *broadAllBroadPKClient) Recv() (*PkAndId, error) {
 	return m, nil
 }
 
-func (c *broadAllClient) BroadProof(ctx context.Context, opts ...grpc.CallOption) (BroadAll_BroadProofClient, error) {
+func (c *broadAllClient) BroadProof(ctx context.Context, in *ProofMsg, opts ...grpc.CallOption) (BroadAll_BroadProofClient, error) {
 	stream, err := c.cc.NewStream(ctx, &_BroadAll_serviceDesc.Streams[1], "/initial.BroadAll/BroadProof", opts...)
 	if err != nil {
 		return nil, err
 	}
 	x := &broadAllBroadProofClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	return x, nil
 }
 
 type BroadAll_BroadProofClient interface {
-	Send(*ProofMsg) error
 	Recv() (*ProofMsg, error)
 	grpc.ClientStream
 }
 
 type broadAllBroadProofClient struct {
 	grpc.ClientStream
-}
-
-func (x *broadAllBroadProofClient) Send(m *ProofMsg) error {
-	return x.ClientStream.SendMsg(m)
 }
 
 func (x *broadAllBroadProofClient) Recv() (*ProofMsg, error) {
@@ -336,18 +345,18 @@ func (x *broadAllBroadProofClient) Recv() (*ProofMsg, error) {
 
 // BroadAllServer is the server API for BroadAll service.
 type BroadAllServer interface {
-	BroadPK(BroadAll_BroadPKServer) error
-	BroadProof(BroadAll_BroadProofServer) error
+	BroadPK(*PkAndId, BroadAll_BroadPKServer) error
+	BroadProof(*ProofMsg, BroadAll_BroadProofServer) error
 }
 
 // UnimplementedBroadAllServer can be embedded to have forward compatible implementations.
 type UnimplementedBroadAllServer struct {
 }
 
-func (*UnimplementedBroadAllServer) BroadPK(BroadAll_BroadPKServer) error {
+func (*UnimplementedBroadAllServer) BroadPK(*PkAndId, BroadAll_BroadPKServer) error {
 	return status.Errorf(codes.Unimplemented, "method BroadPK not implemented")
 }
-func (*UnimplementedBroadAllServer) BroadProof(BroadAll_BroadProofServer) error {
+func (*UnimplementedBroadAllServer) BroadProof(*ProofMsg, BroadAll_BroadProofServer) error {
 	return status.Errorf(codes.Unimplemented, "method BroadProof not implemented")
 }
 
@@ -356,12 +365,15 @@ func RegisterBroadAllServer(s *grpc.Server, srv BroadAllServer) {
 }
 
 func _BroadAll_BroadPK_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(BroadAllServer).BroadPK(&broadAllBroadPKServer{stream})
+	m := new(PkAndId)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(BroadAllServer).BroadPK(m, &broadAllBroadPKServer{stream})
 }
 
 type BroadAll_BroadPKServer interface {
 	Send(*PkAndId) error
-	Recv() (*PkAndId, error)
 	grpc.ServerStream
 }
 
@@ -373,21 +385,16 @@ func (x *broadAllBroadPKServer) Send(m *PkAndId) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *broadAllBroadPKServer) Recv() (*PkAndId, error) {
-	m := new(PkAndId)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 func _BroadAll_BroadProof_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(BroadAllServer).BroadProof(&broadAllBroadProofServer{stream})
+	m := new(ProofMsg)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(BroadAllServer).BroadProof(m, &broadAllBroadProofServer{stream})
 }
 
 type BroadAll_BroadProofServer interface {
 	Send(*ProofMsg) error
-	Recv() (*ProofMsg, error)
 	grpc.ServerStream
 }
 
@@ -399,14 +406,6 @@ func (x *broadAllBroadProofServer) Send(m *ProofMsg) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *broadAllBroadProofServer) Recv() (*ProofMsg, error) {
-	m := new(ProofMsg)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 var _BroadAll_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "initial.BroadAll",
 	HandlerType: (*BroadAllServer)(nil),
@@ -416,13 +415,11 @@ var _BroadAll_serviceDesc = grpc.ServiceDesc{
 			StreamName:    "BroadPK",
 			Handler:       _BroadAll_BroadPK_Handler,
 			ServerStreams: true,
-			ClientStreams: true,
 		},
 		{
 			StreamName:    "BroadProof",
 			Handler:       _BroadAll_BroadProof_Handler,
 			ServerStreams: true,
-			ClientStreams: true,
 		},
 	},
 	Metadata: "initial.proto",

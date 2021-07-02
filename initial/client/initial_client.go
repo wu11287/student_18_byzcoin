@@ -1,62 +1,61 @@
 package main
 
 import (
-	"fmt"
+	"flag"
 	"log"
-	initial "myProject/protos"
 	"net"
+	"sync"
 
-	pt "myProject/initial"
+	initial "myProject/initial"
+	pt "myProject/protos"
 
 	"google.golang.org/grpc"
 )
 
-//TODO 后续读取环境变量
-const id int = 1
+const id int = 5
 
-// const m int = 2
-
-//广播ip
-const (
-	address = "172.23.255.255:50051"
+var (
+	serverAddr = flag.String("server_addr", "localhost:50001", "The server address in the format of host:port")
 )
 
 
-
-func ToShard() {
-
-}
-
-// 作为一个客户端的角色, 去dial广播地址即可
-// 每个节点同时也需要作为服务端在对应端口 8888 监听 --- 如何实现？
 func main() {
-	// var wg sync.WaitGroup
-	node := pt.NewNode(id)
+	var wg sync.WaitGroup
+	
+	node := initial.NewNode(id)
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		panic(err)
 	}
 	ip := addrs[1]
-	fmt.Println(ip) //10.112 网段
+	log.Println(ip) 
 
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+// TODO 如何达到对所有ip的轮询
+	// for _,addr:=range addrs{
+	// 	if ipnet,ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback(){
+	// 		if ipnet.IP.To4() != nil {
+	// 			fmt.Println(ipnet.IP.String())
+	// 		}
+	// 	}
+	// }
+
+	conn, err := grpc.Dial(*serverAddr, grpc.WithInsecure())
 	if err != nil {
-		log.Fatal("create conn err :", err)
+		log.Fatalf("create conn error : %v", err)
 	}
 	defer conn.Close()
+	client := pt.NewBroadAllClient(conn)
+	initial.RunBroadPk(client, node)
 
-	client := initial.NewBroadAllClient(conn)
-	pt.RunBroadPk(client, node)
+	randomness, err := initial.GenerateRandomBytes(10) //不用seed会产生确定性结果,作为初始状态下传递的消息
+	if err != nil {
+		log.Fatalf("generate randomness error: %v", err)
+	}
 
-	// randomness, err := GenerateRandomBytes(10) //不用seed会产生确定性结果
-	// if err != nil {
-	// 	log.Fatalf("generate randomness error: %v", err)
-	// }
-	// // sortition
-	// Sotition(node, randomness, &wg)
-	// if node.choosed {
-	// 	runBroadProof(client, node, randomness, ip.String(), id)
-	// }
-
-	// 对IpInShard分片
+	// sortition -- 加密抽签成功的节点才会调用广播proof的方法
+	initial.Sotition(node, randomness, &wg)
+	if node.Choosed {
+		initial.RunBroadProof(client, node, randomness, ip.String(), id)
+	}
+	wg.Wait()
 }
