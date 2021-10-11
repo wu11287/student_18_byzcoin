@@ -1,0 +1,100 @@
+# github.com/BurntSushi/toml v0.3.1
+## explicit
+github.com/BurntSushi/toml
+# github.com/coreos/bbolt v1.3.5 => go.etcd.io/bbolt v1.3.5
+## explicit
+github.com/coreos/bbolt
+# github.com/davecgh/go-spew v1.1.1
+## explicit
+github.com/davecgh/go-spew/spew
+# github.com/daviddengcn/go-colortext v1.0.0
+## explicit
+github.com/daviddengcn/go-colortext
+# github.com/dedis/fixbuf v1.0.3 => go.dedis.ch/fixbuf v1.0.3
+## explicit
+github.com/dedis/fixbuf
+# github.com/dedis/protobuf v1.0.11 => go.dedis.ch/protobuf v1.0.11
+## explicit
+github.com/dedis/protobuf
+# github.com/gorilla/websocket v1.4.2
+## explicit
+github.com/gorilla/websocket
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
+# github.com/prataprc/goparsec v0.0.0-20210210111032-e54bde2749dd
+## explicit
+github.com/prataprc/goparsec
+# github.com/qantik/qrgo v0.0.0-20160917134849-0c6b902c59f6
+## explicit
+# github.com/satori/go.uuid v1.2.0
+## explicit
+github.com/satori/go.uuid
+# github.com/stretchr/testify v1.5.1
+## explicit
+github.com/stretchr/testify/assert
+github.com/stretchr/testify/require
+# go.dedis.ch/cothority/v3 v3.4.9
+## explicit
+# go.dedis.ch/kyber/v3 v3.0.13
+## explicit
+# go.etcd.io/bbolt v1.3.5 => github.com/coreos/bbolt v1.3.5
+## explicit
+# golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
+## explicit
+golang.org/x/crypto/blake2b
+# golang.org/x/net v0.0.0-20210505214959-0714010a04ed
+## explicit
+# golang.org/x/sys v0.0.0-20210423082822-04245dca01da
+golang.org/x/sys/cpu
+golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/unix
+# gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
+## explicit
+# gopkg.in/dedis/cothority.v2 v2.0.0-20180329140330-3dbb49f06ce1
+## explicit
+gopkg.in/dedis/cothority.v2
+gopkg.in/dedis/cothority.v2/byzcoinx
+gopkg.in/dedis/cothority.v2/ftcosi/protocol
+gopkg.in/dedis/cothority.v2/messaging
+gopkg.in/dedis/cothority.v2/skipchain
+gopkg.in/dedis/cothority.v2/status/service
+# gopkg.in/dedis/kyber.v2 v2.0.0-20180509082236-f066f8d2cd58
+## explicit
+gopkg.in/dedis/kyber.v2
+gopkg.in/dedis/kyber.v2/group/curve25519
+gopkg.in/dedis/kyber.v2/group/edwards25519
+gopkg.in/dedis/kyber.v2/group/internal/marshalling
+gopkg.in/dedis/kyber.v2/group/mod
+gopkg.in/dedis/kyber.v2/group/nist
+gopkg.in/dedis/kyber.v2/sign/cosi
+gopkg.in/dedis/kyber.v2/sign/schnorr
+gopkg.in/dedis/kyber.v2/suites
+gopkg.in/dedis/kyber.v2/util/encoding
+gopkg.in/dedis/kyber.v2/util/key
+gopkg.in/dedis/kyber.v2/util/random
+gopkg.in/dedis/kyber.v2/xof/blake2xb
+# gopkg.in/dedis/onet.v2 v2.0.0-20181115163211-c8f3724038a7
+## explicit
+gopkg.in/dedis/onet.v2
+gopkg.in/dedis/onet.v2/app
+gopkg.in/dedis/onet.v2/cfgpath
+gopkg.in/dedis/onet.v2/log
+gopkg.in/dedis/onet.v2/network
+# gopkg.in/satori/go.uuid.v1 v1.2.0
+## explicit
+gopkg.in/satori/go.uuid.v1
+# gopkg.in/tylerb/graceful.v1 v1.2.15
+## explicit
+gopkg.in/tylerb/graceful.v1
+# gopkg.in/urfave/cli.v1 v1.20.0
+## explicit
+gopkg.in/urfave/cli.v1
+# gopkg.in/yaml.v2 v2.2.8
+## explicit
+gopkg.in/yaml.v2
+# rsc.io/goversion v1.2.0
+## explicit
+rsc.io/goversion/version
+# go.dedis.ch/fixbuf v1.0.3 => github.com/dedis/fixbuf v1.0.3
+# go.dedis.ch/protobuf v1.0.11 => github.com/dedis/protobuf v1.0.11
+# go.etcd.io/bbolt v1.3.5 => github.com/coreos/bbolt v1.3.5

@@ -1,0 +1,43 @@
+# prefix to find Coding root
+CODING ?= Coding
+# what to remove from golint
+lint-filter := cat
+ifdef EXCLUDE_LINT
+lint-filter := grep -vE '$(EXCLUDE_LINT)'
+endif
+
+GOPATH := $(shell go env GOPATH)
+PATH := $(PATH):$(GOPATH)/bin
+
+.PHONY: test_fmt
+test_fmt:
+	@echo Checking correct formatting of files
+	out=`gofmt -l -s .`; echo "$$out"; [ -z "$$out" ]
+	go vet ./...
+
+.PHONY: test_imports
+test_imports: $(GOPATH)/bin/goimports
+	@echo Checking correct formatting and import lines of files
+	out=`$< -l .`; echo "$$out"; [ -z "$$out" ]
+$(GOPATH)/bin/goimports:
+	GO111MODULE=off go get golang.org/x/tools/cmd/goimports
+
+.PHONY: test_lint
+test_lint: $(GOPATH)/bin/golint
+	@echo Checking linting of files
+	out=`$< ./... | $(lint-filter)`; echo "$$out"; [ -z "$$out" ]
+	go mod tidy; out=`git status --porcelain`; echo "$$out"; [ -z "$$out" ]
+$(GOPATH)/bin/golint:
+	GO111MODULE=off go get golang.org/x/lint/golint
+
+.PHONY: test_goveralls
+test_goveralls: profile.cov $(GOPATH)/bin/goveralls
+	$(word 2,$^) -coverprofile=$< -service=travis-ci
+.INTERMEDIATE: profile.cov
+profile.cov:
+	$(CODING)/bin/coveralls.sh
+$(GOPATH)/bin/goveralls:
+	GO111MODULE=off go get github.com/mattn/goveralls
+
+.PHONY: test
+test: test_fmt test_lint test_goveralls 
